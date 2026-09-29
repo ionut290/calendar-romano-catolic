@@ -1,26 +1,15 @@
 <!doctype html>
-<html lang="it">
-<head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#7b1e2b"><meta name="description" content="Calendario Romano Cattolico in italiano">
-<link rel="manifest" href="manifest.webmanifest"><link rel="stylesheet" href="style.css">
-<title>Calendario Romano Cattolico</title>
-</head>
-<body>
-<header><div class="cross">✝</div><div><h1>Calendario Romano Cattolico</h1><p id="liturgical">Calendario liturgico in italiano</p></div></header>
-<main>
-<section id="today" class="view active">
-<div class="date-card"><span id="weekday"></span><strong id="day"></strong><span id="month"></span><button id="goToday">OGGI</button></div>
-<article class="hero"><div class="eyebrow">CELEBRAZIONE DEL GIORNO</div><h2 id="feast">Santi Arcangeli Michele, Gabriele e Raffaele</h2><p id="rank">Festa</p></article>
+<html lang="it"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#761d2b"><meta name="description" content="Calendario liturgico cattolico italiano"><link rel="manifest" href="manifest.webmanifest"><link rel="stylesheet" href="style.css"><title>Calendario Cattolico</title></head>
+<body><header><div class="cross">✝</div><div><h1>Calendario Cattolico</h1><p>Rito Romano · Italia</p></div></header>
+<main><section id="today" class="view active"><div class="datebar"><div><b id="weekday"></b><strong id="day"></strong><span id="month"></span></div><button id="goToday">OGGI</button></div>
+<article class="hero"><div class="eyebrow">CELEBRAZIONE DEL GIORNO</div><h2 id="celebration">Caricamento…</h2><div id="liturgicalMeta"></div></article>
+<div id="status" class="status">Caricamento dei dati liturgici…</div>
 <div class="grid">
-<article class="card gospel"><h3>📖 Vangelo del giorno</h3><p class="reference" id="gospelRef">In 1,47-51</p><p id="gospelText">Il Vangelo completo sarà caricato dalla fonte liturgica italiana.</p></article>
-<article class="card"><h3>🕊️ Meditazione del giorno</h3><p id="meditation">La Parola di Dio illumina il nostro cammino e ci invita a riconoscere la sua presenza nella vita quotidiana.</p></article>
-<article class="card"><h3>👤 Santo del giorno</h3><p id="saintLife">Michele, Gabriele e Raffaele sono i tre arcangeli nominati nella Sacra Scrittura.</p></article>
-<article class="card prayer"><h3>🙏 Preghiera del giorno</h3><p id="prayer">Signore, guida oggi i nostri passi, rafforza la nostra fede e aiutaci a portare pace e bene alle persone che incontriamo. Amen.</p></article>
+<article class="card gospel"><h3>📖 Vangelo del giorno</h3><div class="reference" id="gospelRef"></div><div id="gospelText"></div></article>
+<article class="card"><h3>🕊️ Meditazione</h3><div id="meditation"></div></article>
+<article class="card"><h3>🙏 Preghiera</h3><div id="prayer"></div></article>
+<article class="card"><h3>📚 Letture della Messa</h3><div id="readings"></div></article>
 </div></section>
-<section id="calendar" class="view"><div class="calendar-head"><button id="prevMonth">‹</button><h2 id="calendarTitle"></h2><button id="nextMonth">›</button></div><div class="week"><b>Lu</b><b>Ma</b><b>Me</b><b>Gi</b><b>Ve</b><b>Sa</b><b>Do</b></div><div id="calendarGrid" class="calendar-grid"></div><p class="hint">Tocca un giorno per aprire la pagina liturgica.</p></section>
-<section id="info" class="view"><article class="card"><h2>Informazioni sull’app</h2><p>Un calendario romano cattolico in italiano con la celebrazione, il Vangelo, una meditazione, il santo del giorno e una preghiera.</p><p>L’app è progettata per contenuti liturgici dinamici e può essere installata sul telefono.</p></article></section>
-</main>
-<nav><button class="nav active" data-view="today">✝<span>Oggi</span></button><button class="nav" data-view="calendar">▦<span>Calendar</span></button><button class="nav" data-view="info">ⓘ<span>Info</span></button></nav>
-<script src="app.js"></script>
-</body></html>
+<section id="calendar" class="view"><div class="calendar-head"><button id="prevMonth" aria-label="Mese precedente">‹</button><h2 id="calendarTitle"></h2><button id="nextMonth" aria-label="Mese successivo">›</button></div><div class="week"><b>Lu</b><b>Ma</b><b>Me</b><b>Gi</b><b>Ve</b><b>Sa</b><b>Do</b></div><div id="calendarGrid" class="calendar-grid"></div><p class="hint">Tocca un giorno per aprire la liturgia.</p></section>
+<section id="info" class="view"><article class="card"><h2>Informazioni</h2><p>Calendario liturgico cattolico in italiano per il Rito Romano.</p><p>I dati liturgici e il testo biblico provengono dagli Open Data di Parola Viva. Le meditazioni e le preghiere dell'app sono testi originali.</p></article></section></main>
+<nav><button class="nav active" data-view="today">✝<span>Oggi</span></button><button class="nav" data-view="calendar">▦<span>Calendario</span></button><button class="nav" data-view="info">ⓘ<span>Info</span></button></nav><script src="app.js"></script></body></html>
