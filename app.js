@@ -68,13 +68,12 @@ function openSaint(s){$("#saintName").textContent=s.name;$("#saintRole").textCon
 const MeditationMusic=(()=>{
 let ctx=null,master=null,timer=null,playing=false;
 const pref=()=>localStorage.getItem("meditationMusic");
-function ensure(){if(ctx)return;const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;ctx=new AC();master=ctx.createGain();master.gain.value=.055;master.connect(ctx.destination)}
+function ensure(){if(ctx)return;const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;ctx=new AC();master=ctx.createGain();master.gain.value=.045;master.connect(ctx.destination)}
 function tone(freq,start,dur,vol=.13){const o=ctx.createOscillator(),g=ctx.createGain();o.type="sine";o.frequency.value=freq;g.gain.setValueAtTime(0,start);g.gain.linearRampToValueAtTime(vol,start+1.5);g.gain.linearRampToValueAtTime(0,start+dur);o.connect(g);g.connect(master);o.start(start);o.stop(start+dur+.1)}
-function phrase(){if(!ctx||!playing)return;const now=ctx.currentTime+.1;[[261.63,0],[329.63,0],[392,0],[493.88,0],[440,6],[349.23,6],[293.66,6],[392,6]].forEach(([f,o],i)=>tone(f,now+o,9,.08+(i%3)*.015))}
-async function start(){ensure();if(!ctx)return false;try{await ctx.resume();playing=true;phrase();clearInterval(timer);timer=setInterval(phrase,12000);update();setTimeout(speakPrayer,1800);return true}catch(e){return false}}
-function stop(){playing=false;clearInterval(timer);timer=null;if("speechSynthesis"in window)window.speechSynthesis.cancel();if(master&&ctx)master.gain.setTargetAtTime(0,ctx.currentTime,.4);setTimeout(()=>{if(master)master.gain.value=.055},900);update()}
-function speakPrayer(){if(!("speechSynthesis"in window))return;window.speechSynthesis.cancel();const text=(document.querySelector("#prayer")?.textContent||"").trim();if(!text)return;const u=new SpeechSynthesisUtterance(text);u.lang="it-IT";u.rate=.84;u.pitch=.95;u.volume=.82;const voices=window.speechSynthesis.getVoices();u.voice=voices.find(v=>/^it[-_]/i.test(v.lang))||voices.find(v=>/ital/i.test(v.name))||null;window.speechSynthesis.speak(u)}
-function update(){const b=document.querySelector("#musicToggle");if(b){b.textContent=playing?"♫":"♪";b.classList.toggle("playing",playing);b.setAttribute("aria-label",playing?"Disattiva musica e voce di meditazione":"Attiva musica e voce di meditazione")}}
+function phrase(){if(!ctx||!playing)return;const now=ctx.currentTime+.1;[[130.81,0],[196,0],[261.63,0],[329.63,0],[146.83,8],[220,8],[293.66,8],[349.23,8],[174.61,16],[261.63,16],[349.23,16],[440,16]].forEach(([f,o],i)=>tone(f,now+o,12,.055+(i%4)*.008))}
+async function start(){ensure();if(!ctx)return false;try{await ctx.resume();playing=true;phrase();clearInterval(timer);timer=setInterval(phrase,24000);update();return true}catch(e){return false}}
+function stop(){playing=false;clearInterval(timer);timer=null;if(master&&ctx)master.gain.setTargetAtTime(0,ctx.currentTime,.4);setTimeout(()=>{if(master)master.gain.value=.055},900);update()}
+function update(){const b=document.querySelector("#musicToggle");if(b){b.textContent=playing?"♫":"♪";b.classList.toggle("playing",playing);b.setAttribute("aria-label",playing?"Disattiva musica da chiesa":"Attiva musica da chiesa")}}
 async function init(){const modal=document.querySelector("#musicConsent");if(!modal)return;const p=pref();if(p===null)modal.hidden=false;else if(p==="on"){const once=async()=>{document.removeEventListener("pointerdown",once);await start()};document.addEventListener("pointerdown",once,{once:true})}
 document.querySelector("#musicYes").onclick=async()=>{localStorage.setItem("meditationMusic","on");modal.hidden=true;await start()};
 document.querySelector("#musicNo").onclick=()=>{localStorage.setItem("meditationMusic","off");modal.hidden=true;stop()};
