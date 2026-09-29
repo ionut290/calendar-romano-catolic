@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#7b1e2b"><meta name="description" content="Calendar Romano-Catolic în limba română">
+<link rel="manifest" href="manifest.webmanifest"><link rel="stylesheet" href="style.css">
+<title>Calendar Romano-Catolic</title>
+</head>
+<body>
+<header><div class="cross">✝</div><div><h1>Calendar Romano-Catolic</h1><p id="liturgical">Calendar liturgic în limba română</p></div></header>
+<main>
+<section id="today" class="view active">
+<div class="date-card"><span id="weekday"></span><strong id="day"></strong><span id="month"></span><button id="goToday">ASTĂZI</button></div>
+<article class="hero"><div class="eyebrow">SĂRBĂTOAREA ZILEI</div><h2 id="feast">Sfinții Arhangheli Mihail, Gabriel și Rafael</h2><p id="rank">Sărbătoare</p></article>
+<div class="grid">
+<article class="card gospel"><h3>📖 Evanghelia zilei</h3><p class="reference" id="gospelRef">In 1,47-51</p><p id="gospelText">Lectura completă va fi încărcată din sursa liturgică aprobată.</p></article>
+<article class="card"><h3>🕊️ Meditația zilei</h3><p id="meditation">Dumnezeu ne amintește că nu suntem singuri pe drum. Credința ne deschide ochii spre prezența Sa și ne cheamă să devenim, la rândul nostru, mesageri ai binelui.</p></article>
+<article class="card"><h3>👤 Sfântul zilei</h3><p id="saintLife">Mihail, Gabriel și Rafael sunt cei trei arhangheli numiți în Sfânta Scriptură. Numele și misiunile lor ne vorbesc despre puterea, vestea și vindecarea lui Dumnezeu.</p></article>
+<article class="card prayer"><h3>🙏 Rugăciunea zilei</h3><p id="prayer">Doamne, călăuzește-ne astăzi pașii, întărește-ne credința și ajută-ne să purtăm pacea și binele către cei pe care îi întâlnim. Amin.</p></article>
+</div></section>
+<section id="calendar" class="view"><div class="calendar-head"><button id="prevMonth">‹</button><h2 id="calendarTitle"></h2><button id="nextMonth">›</button></div><div class="week"><b>Lu</b><b>Ma</b><b>Mi</b><b>Jo</b><b>Vi</b><b>Sâ</b><b>Du</b></div><div id="calendarGrid" class="calendar-grid"></div><p class="hint">Apasă pe o zi pentru a deschide pagina liturgică.</p></section>
+<section id="info" class="view"><article class="card"><h2>Despre aplicație</h2><p>Un calendar romano-catolic în limba română, conceput pentru a oferi zilnic sărbătoarea, Evanghelia, o meditație, viața sfântului și o rugăciune.</p><p>Aplicația este pregătită pentru conținut liturgic dinamic și pentru instalare pe telefon.</p></article></section>
+</main>
+<nav><button class="nav active" data-view="today">✝<span>Astăzi</span></button><button class="nav" data-view="calendar">▦<span>Calendar</span></button><button class="nav" data-view="info">ⓘ<span>Despre</span></button></nav>
+<script src="app.js"></script>
+</body></html>
