@@ -21,8 +21,8 @@ med:"Il chicco non produce vita conservandosi intatto, ma consegnandosi. Gesù p
 prayer:"Signore Gesù, chicco donato per la vita del mondo, insegnami a non trattenere tutto per me. Liberami dalla paura di perdere quando amare mi chiede tempo, pazienza e sacrificio. Fa' che le mie rinunce non nascano dalla tristezza, ma dalla libertà di chi desidera portare frutto. Rendimi disponibile a seguirti anche quando la via dell'amore costa. Amen."
 }
 };
-function normalizeGospelRef(r){return String(r||"").replace(/\s+/g," ").replace(/\s*,\s*/g,",").trim()}
-function editorialFor(x){return GOSPEL_EDITORIAL[normalizeGospelRef(x.letture?.vangelo?.riferimento)]||null}
+function normalizeGospelRef(r){return String(r||"").replace(/^(?:dal\s+)?vangelo\s+secondo\s+\w+\s*/i,"").replace(/[–—]/g,"-").replace(/\s+/g," ").replace(/\s*,\s*/g,",").trim()}
+function editorialFor(x){const raw=normalizeGospelRef(x.letture?.vangelo?.riferimento);if(GOSPEL_EDITORIAL[raw])return GOSPEL_EDITORIAL[raw];const key=Object.keys(GOSPEL_EDITORIAL).find(k=>raw.includes(k)||k.includes(raw));return key?GOSPEL_EDITORIAL[key]:null}
 function liveGospelToday(x){
 const editorial=editorialFor(x);if(editorial)return editorial.live;
 const ref=x.letture?.vangelo?.riferimento||"";
