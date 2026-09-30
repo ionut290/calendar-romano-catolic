@@ -1,0 +1,36 @@
+name: Aggiorna calendario offline
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/build-calendar-data.yml"
+      - "scripts/build_calendar_data.py"
+  schedule:
+    - cron: "17 2 1 * *"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Genera 2026 e 2027
+        run: python scripts/build_calendar_data.py 2026 2027
+      - name: Salva bundle nel repository
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/2026.json data/2027.json
+          if git diff --cached --quiet; then
+            echo "Nessun aggiornamento"
+          else
+            git commit -m "Aggiorna dati calendario offline"
+            git push
+          fi
