@@ -74,11 +74,52 @@ return themes.find(z=>z.re.test(t))||{m:"La Parola di oggi ci invita a fermarci 
 }
 function meditation(x){return reflectionFor(x).med}
 function prayer(x){return reflectionFor(x).prayer}
-async function loadDay(d){$("#status").textContent="Caricamento dei dati liturgici…";try{const mm=String(d.getMonth()+1).padStart(2,"0"),dd=String(d.getDate()).padStart(2,"0"),dayKey=iso(d),cacheKey="liturgia:"+dayKey;let x=null;try{const saved=localStorage.getItem(cacheKey);if(saved)x=JSON.parse(saved)}catch(e){}if(!x){const r=await fetch(API+"/"+d.getFullYear()+"/"+mm+"-"+dd+".json");if(!r.ok)throw Error("Dati non disponibili");x=await r.json();try{localStorage.setItem(cacheKey,JSON.stringify(x))}catch(e){}}if(iso(d)!==iso(selected))return;const saints=await getSaintsForDay(d,x);
+async function loadDay(d){const dayKey=iso(d),cacheKey="liturgia:"+dayKey;let cached=null;try{const saved=localStorage.getItem(cacheKey);if(saved)cached=JSON.parse(saved)}catch(e){}$("#status").textContent=cached?"":"Caricamento dei dati liturgici…";try{const mm=String(d.getMonth()+1).padStart(2,"0"),dd=String(d.getDate()).padStart(2,"0");let x=cached;if(!x){const r=await fetch(API+"/"+d.getFullYear()+"/"+mm+"-"+dd+".json");if(!r.ok)throw Error("Dati non disponibili");x=await r.json();try{localStorage.setItem(cacheKey,JSON.stringify(x))}catch(e){}}if(iso(d)!==iso(selected))return;const saints=await getSaintsForDay(d,x);
 const heroSaint=saints[0];
 $("#celebration").textContent=heroSaint?.name||x.celebrazione||"Santo del giorno";
 const heroRole=$("#saintHeroRole");if(heroRole)heroRole.textContent=heroSaint?.role||"";
-renderSaintsList(d,x,saints);$("#liturgicalMeta").innerHTML='<div class="meta"><span class="vestment '+colorClass(x.colore)+'"></span><strong>'+esc(cap(x.colore||""))+"</strong></div>";const g=x.letture?.vangelo;$("#gospelRef").textContent=g?.riferimento||"";if(g?.riferimento){const gospelKey="vangelo:"+dayKey;let cei="";try{cei=localStorage.getItem(gospelKey)||""}catch(e){}if(!cei){cei=await loadCei2008(g.riferimento);if(cei)try{localStorage.setItem(gospelKey,cei)}catch(e){}}$("#gospelText").innerHTML=cei|| (g?.testo?verses(g.testo):"Testo del Vangelo non disponibile.")}else $("#gospelText").textContent="Testo del Vangelo non disponibile.";$("#readings").innerHTML=reading("Prima lettura",x.letture?.prima)+reading("Salmo",x.letture?.salmo)+reading("Seconda lettura",x.letture?.seconda)+reading("Vangelo",g);$("#gospelToday").innerHTML=liveGospelToday(x);$("#meditation").textContent=meditation(x);$("#prayer").textContent=prayer(x);$("#status").textContent=""}catch(e){$("#status").textContent="I dati liturgici per questa data non sono disponibili.";$("#celebration").textContent="Calendario liturgico";$("#gospelText").textContent="Impossibile caricare il Vangelo."}}async function preloadLiturgicalWindow(center=new Date(),days=14){for(let n=-2;n<=days;n++){const d=new Date(center.getFullYear(),center.getMonth(),center.getDate()+n),k=iso(d),lk="liturgia:"+k;try{if(localStorage.getItem(lk))continue;const mm=String(d.getMonth()+1).padStart(2,"0"),dd=String(d.getDate()).padStart(2,"0"),r=await fetch(API+"/"+d.getFullYear()+"/"+mm+"-"+dd+".json");if(!r.ok)continue;const x=await r.json();localStorage.setItem(lk,JSON.stringify(x));const ref=x.letture?.vangelo?.riferimento;if(ref&&!localStorage.getItem("vangelo:"+k)){const text=await loadCei2008(ref);if(text)localStorage.setItem("vangelo:"+k,text)}}catch(e){console.warn("Precaricamento",k,e)}}}
+renderSaintsList(d,x,saints);$("#liturgicalMeta").innerHTML='<div class="meta"><span class="vestment '+colorClass(x.colore)+'"></span><strong>'+esc(cap(x.colore||""))+"</strong></div>";const g=x.letture?.vangelo;$("#gospelRef").textContent=g?.riferimento||"";if(g?.riferimento){const gospelKey="vangelo:"+dayKey;let cei="";try{cei=localStorage.getItem(gospelKey)||""}catch(e){}if(!cei){cei=await loadCei2008(g.riferimento);if(cei)try{localStorage.setItem(gospelKey,cei)}catch(e){}}$("#gospelText").innerHTML=cei|| (g?.testo?verses(g.testo):"Testo del Vangelo non disponibile.")}else $("#gospelText").textContent="Testo del Vangelo non disponibile.";$("#readings").innerHTML=reading("Prima lettura",x.letture?.prima)+reading("Salmo",x.letture?.salmo)+reading("Seconda lettura",x.letture?.seconda)+reading("Vangelo",g);$("#gospelToday").innerHTML=liveGospelToday(x);$("#meditation").textContent=meditation(x);$("#prayer").textContent=prayer(x);$("#status").textContent=""}catch(e){$("#status").textContent="I dati liturgici per questa data non sono disponibili.";$("#celebration").textContent="Calendario liturgico";$("#gospelText").textContent="Impossibile caricare il Vangelo."}}async function preloadLiturgicalYear(year=new Date().getFullYear()){
+ const marker="liturgia-preloaded:"+year;
+ if(localStorage.getItem(marker)==="1")return;
+ for(let month=0;month<12;month++){
+   const last=new Date(year,month+1,0).getDate();
+   for(let day=1;day<=last;day++){
+     const d=new Date(year,month,day),k=iso(d),lk="liturgia:"+k;
+     try{
+       let x=null;
+       try{const saved=localStorage.getItem(lk);if(saved)x=JSON.parse(saved)}catch(e){}
+       if(!x){
+         const mm=String(month+1).padStart(2,"0"),dd=String(day).padStart(2,"0");
+         const r=await fetch(API+"/"+year+"/"+mm+"-"+dd+".json",{cache:"force-cache"});
+         if(!r.ok)continue;
+         x=await r.json();
+         try{localStorage.setItem(lk,JSON.stringify(x))}catch(e){}
+       }
+       const ref=x?.letture?.vangelo?.riferimento;
+       if(ref&&!localStorage.getItem("vangelo:"+k)){
+         const text=await loadCei2008(ref);
+         if(text)try{localStorage.setItem("vangelo:"+k,text)}catch(e){}
+       }
+       if(day%7===0)await new Promise(r=>setTimeout(r,0));
+     }catch(e){console.warn("Precaricamento annuale",k,e)}
+   }
+ }
+ localStorage.setItem(marker,"1");
+}
+async function preloadLiturgicalWindow(center=new Date(),days=14){
+ for(let n=-2;n<=days;n++){
+   const d=new Date(center.getFullYear(),center.getMonth(),center.getDate()+n),k=iso(d),lk="liturgia:"+k;
+   try{
+     if(localStorage.getItem(lk))continue;
+     const mm=String(d.getMonth()+1).padStart(2,"0"),dd=String(d.getDate()).padStart(2,"0"),r=await fetch(API+"/"+d.getFullYear()+"/"+mm+"-"+dd+".json",{cache:"force-cache"});
+     if(!r.ok)continue;
+     const x=await r.json();
+     localStorage.setItem(lk,JSON.stringify(x));
+     const ref=x.letture?.vangelo?.riferimento;
+     if(ref&&!localStorage.getItem("vangelo:"+k)){const text=await loadCei2008(ref);if(text)localStorage.setItem("vangelo:"+k,text)}
+   }catch(e){console.warn("Precaricamento",k,e)}
+ }
+}
 function saintsFor(d){return SAINTS[String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")]||[]}
 async function loadItalianCalendarYear(year){if(yearSaintCache[year])return yearSaintCache[year];try{const key="itcal:"+year;const old=localStorage.getItem(key);if(old){yearSaintCache[year]=JSON.parse(old);return yearSaintCache[year]}const r=await fetch(IT_CAL_API+"?anno="+year+"&intervallo=anno&output=json&nofc=1&compressjson=1");if(!r.ok)throw Error("Calendario italiano non disponibile");const x=await r.json();yearSaintCache[year]=x;localStorage.setItem(key,JSON.stringify(x));return x}catch(e){console.warn("Calendario cattolico italiano:",e);return null}}
 function flattenCalendarEvents(x){if(!x)return[];if(Array.isArray(x))return x.flatMap(flattenCalendarEvents);if(typeof x!=="object")return[];const own=(x.nome||x.name||x.titolo||x.title||x.festa||x.celebrazione)?[x]:[];return own.concat(Object.values(x).flatMap(v=>typeof v==="object"?flattenCalendarEvents(v):[]))}
@@ -234,4 +275,4 @@ document.querySelector("#musicYes").onclick=async()=>{localStorage.setItem("medi
 document.querySelector("#musicNo").onclick=()=>{localStorage.setItem("meditationMusic","off");modal.hidden=true;stop()};
 document.querySelector("#musicToggle").onclick=async()=>{if(playing){localStorage.setItem("meditationMusic","off");stop()}else{localStorage.setItem("meditationMusic","on");await start()}}}
 return{init,start,stop}})();
-document.addEventListener("DOMContentLoaded",()=>{const today=new Date();renderDay(today);renderCalendar();MeditationMusic.init();Narrator.init();setTimeout(()=>preloadLiturgicalWindow(today,30),1200)});
+document.addEventListener("DOMContentLoaded",()=>{const today=new Date();renderDay(today);renderCalendar();MeditationMusic.init();Narrator.init();setTimeout(()=>preloadLiturgicalWindow(today,30),300);setTimeout(()=>preloadLiturgicalYear(today.getFullYear()),1200);setTimeout(()=>preloadLiturgicalYear(today.getFullYear()+1),5000)});
