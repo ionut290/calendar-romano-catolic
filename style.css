@@ -4,3 +4,21 @@
 .bible-year{grid-column:1/-1}.bible-year-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}.bible-year-head h3{margin:5px 0}.bible-year-head>strong{white-space:nowrap;color:var(--wine);background:#f7efe1;padding:7px 11px;border-radius:999px;font-size:13px}.bible-progress{height:8px;background:#eee4d4;border-radius:999px;overflow:hidden;margin:14px 0}.bible-progress span{display:block;height:100%;width:0;background:var(--gold);transition:width .25s}.bible-year-text{max-height:520px;overflow:auto;padding-right:8px;line-height:1.7}.bible-chunk{padding:10px 0 18px;border-bottom:1px solid #eee2d0}.bible-chunk h4{color:var(--wine);font:700 19px Georgia,serif;margin:0 0 10px}.bible-chunk p{margin:0 0 8px}.bible-chunk sup{color:#9a7335;font-weight:700;margin-right:4px}.bible-read-btn{margin-top:16px;border:0;border-radius:999px;background:var(--wine);color:#fff;padding:11px 18px;font-weight:700;cursor:pointer}.bible-read-btn.done{background:#48643f}@media(max-width:620px){.bible-year-head{display:block}.bible-year-head>strong{display:inline-block;margin-top:8px}.bible-year-text{max-height:440px}}
 
 .narrate-btn{display:inline-flex;align-items:center;gap:6px;margin:2px 0 14px;border:1px solid #d7bc7b;background:#fffaf0;color:var(--wine);border-radius:999px;padding:8px 13px;font-weight:700;cursor:pointer}.narrate-btn:hover{background:#f7edd9}.narrate-btn.playing{background:var(--wine);color:#fff}.narrate-btn:disabled{opacity:.65;cursor:wait}
+
+/* Percorso quotidiano e lettura più raccolta */
+.daily-path{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin:2px 0 14px;padding:10px 12px;border:1px solid #e6d8c1;border-radius:14px;background:#fffaf2;color:var(--muted);font:700 11px Arial,sans-serif}
+.daily-path span:nth-child(odd){color:var(--wine)}
+.card{padding:22px 24px}
+.card h3{font-size:24px;line-height:1.2;margin-bottom:12px}
+.card>div:not(.bible-year-head):not(.bible-progress),.live-gospel div{font-size:18px;line-height:1.72}
+.narrate-btn{padding:8px 14px;margin:1px 0 18px;min-height:42px}
+.narrate-btn .play-icon{font:700 13px Arial,sans-serif}
+.narrate-btn .play-label{font:700 14px Arial,sans-serif}
+.gospel-action{padding:17px 19px;margin:20px 0}
+.gospel-question{padding-top:3px}
+@media(max-width:620px){
+ .daily-path{justify-content:flex-start;overflow-x:auto;flex-wrap:nowrap;white-space:nowrap;-webkit-overflow-scrolling:touch}
+ .card{padding:20px}
+ .card h3{font-size:23px}
+ .card>div:not(.bible-year-head):not(.bible-progress),.live-gospel div{font-size:17px;line-height:1.7}
+}
