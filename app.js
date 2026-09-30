@@ -80,8 +80,56 @@ function flattenCalendarEvents(x){if(!x)return[];if(Array.isArray(x))return x.fl
 function eventDate(e){const v=e.data||e.date||e.giorno||e.timestamp||e.ts||"";if(typeof v==="number")return new Date(v>1e12?v:v*1000);if(typeof v==="string"){if(/^\d{10,13}$/.test(v)){const n=Number(v);return new Date(n>1e12?n:n*1000)}let m=v.match(/(\d{4})[-\/]?(\d{2})[-\/]?(\d{2})/);if(m)return new Date(+m[1],+m[2]-1,+m[3]);m=v.match(/(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})/);if(m)return new Date(+m[3],+m[2]-1,+m[1]);m=v.match(/(\d{1,2})[-\/](\d{1,2})/);if(m)return new Date(selected.getFullYear(),+m[2]-1,+m[1])}return null}
 function saintishName(e){return String(e.nome||e.name||e.titolo||e.title||e.festa||e.celebrazione||"").trim()}
 function isSaintEvent(n){return /\b(San|Santo|Santa|Santi|Sante|Beato|Beata|Beati|Beate)\b/i.test(n)}
-async function renderSaints(d,x){let list=saintsFor(d);try{const cal=await loadItalianCalendarYear(d.getFullYear());const events=flattenCalendarEvents(cal).filter(e=>{const ed=eventDate(e);return ed&&ed.getMonth()===d.getMonth()&&ed.getDate()===d.getDate()&&isSaintEvent(saintishName(e))});for(const e of events){const name=saintishName(e);if(name&&!list.some(s=>s.name.toLowerCase()===name.toLowerCase()))list.push({name,role:e.tipo||e.type||e.liturgia||"Santo del giorno",bio:e.descrizione||e.description||"Questa memoria appartiene al calendario liturgico cattolico italiano. La scheda biografica approfondita è in preparazione.",tradition:"La tradizione della Chiesa conserva la memoria di questo santo come testimonianza di fede vissuta.",meaning:"La sua memoria invita a trasformare la fede in scelte concrete di carità, fedeltà e servizio."})}}catch(e){console.warn(e)}
-const box=$("#saintsToday");if(!list.length&&x?.celebrazione&&isSaintEvent(String(x.celebrazione))){list=[{name:String(x.celebrazione),role:"Memoria o celebrazione del giorno",bio:"Questa figura è ricordata oggi nel calendario liturgico. La scheda biografica completa sarà progressivamente arricchita con fonti verificate.",tradition:"La memoria liturgica invita a custodire la testimonianza cristiana trasmessa dalla Chiesa.",meaning:"La santità cristiana si traduce nella vita concreta attraverso fede, carità, speranza e servizio."}]}box.style.display="block";box.innerHTML='<div class="saints-label">SANTO/I DEL GIORNO</div>'+list.map((s,i)=>'<button class="saint-link" data-saint="'+i+'">✦ '+esc(s.name)+' <span>'+esc(s.role)+'</span></button>').join("");box.querySelectorAll(".saint-link").forEach(b=>b.onclick=()=>openSaint(list[Number(b.dataset.saint)]))}
+async function renderSaints(d,x){
+ const dateKey=iso(d).replaceAll("-","");
+ const ceiUrl="https://www.chiesacattolica.it/santo-del-giorno/?data-liturgia="+dateKey;
+ let list=saintsFor(d).map(s=>({...s,source:"Scheda interna"}));
+ try{
+   const proxy="https://api.allorigins.win/raw?url="+encodeURIComponent(ceiUrl);
+   const r=await fetch(proxy,{cache:"no-store"});
+   if(!r.ok)throw Error("CEI non disponibile");
+   const html=await r.text(),doc=new DOMParser().parseFromString(html,"text/html");
+   const main=doc.querySelector("h1");
+   if(main){
+     const name=main.textContent.trim();
+     let grade="",bio="";
+     let n=main.nextElementSibling;
+     while(n&&!/^H[1-4]$/.test(n.tagName)){
+       const t=n.textContent.trim();
+       if(!grade&&/^(Memoria|Festa|Solennità|Memoria facoltativa)$/i.test(t))grade=t;
+       n=n.nextElementSibling;
+     }
+     const mart=[...doc.querySelectorAll("h2,h3,h4")].find(h=>/Dal Martirologio/i.test(h.textContent));
+     if(mart){
+       let p=mart.nextElementSibling;
+       while(p&&p.tagName!=="P")p=p.nextElementSibling;
+       bio=p?.textContent?.trim()||"";
+     }
+     list=[{name,role:grade||"Santo del giorno",bio:bio||"Consulta la scheda ufficiale CEI per il testo del Martirologio.",tradition:"Scheda del giorno basata sul Martirologio Romano pubblicato dalla Conferenza Episcopale Italiana.",meaning:"La memoria liturgica invita a conoscere la testimonianza del santo e a tradurla in una scelta concreta di fede e carità.",source:"CEI",sourceUrl:ceiUrl}];
+     const altri=[...doc.querySelectorAll("h4")].filter(h=>/^(San|Sant|Santa|Santi|Sante|Beato|Beata|Beati|Beate|Memoria)/i.test(h.textContent.trim()));
+     for(const h of altri){
+       const nm=h.textContent.trim();
+       if(!nm||list.some(s=>s.name.toLowerCase()===nm.toLowerCase()))continue;
+       let bio2="",q=h.nextElementSibling;
+       while(q&&q.tagName!=="H4"){if(q.tagName==="P"&&q.textContent.trim()){bio2=q.textContent.trim();break}q=q.nextElementSibling}
+       list.push({name:nm,role:"Dal Martirologio Romano",bio:bio2||"Commemorato in questa data dal Martirologio Romano.",tradition:"Memoria riportata dalla Conferenza Episcopale Italiana.",meaning:"La sua testimonianza richiama alla fedeltà al Vangelo nella vita quotidiana.",source:"CEI",sourceUrl:ceiUrl});
+     }
+   }
+ }catch(e){console.warn("Santi CEI:",e)}
+ if(!list.length){
+   try{
+     const cal=await loadItalianCalendarYear(d.getFullYear());
+     const events=flattenCalendarEvents(cal).filter(e=>{const ed=eventDate(e);return ed&&ed.getMonth()===d.getMonth()&&ed.getDate()===d.getDate()&&isSaintEvent(saintishName(e))});
+     for(const e of events){const name=saintishName(e);if(name&&!list.some(s=>s.name.toLowerCase()===name.toLowerCase()))list.push({name,role:e.tipo||e.type||e.liturgia||"Santo del giorno",bio:e.descrizione||e.description||"Memoria del calendario cattolico italiano.",tradition:"Memoria della tradizione della Chiesa.",meaning:"La sua testimonianza invita a vivere concretamente fede, speranza e carità.",source:"Calendario liturgico"})}
+   }catch(e){console.warn(e)}
+ }
+ if(!list.length&&x?.celebrazione&&isSaintEvent(String(x.celebrazione)))list=[{name:String(x.celebrazione),role:"Memoria o celebrazione del giorno",bio:"Figura ricordata oggi nel calendario liturgico.",tradition:"Memoria liturgica della Chiesa.",meaning:"La santità cristiana si traduce nella vita concreta attraverso fede, carità, speranza e servizio."}];
+ const box=$("#saintsToday");
+ if(!list.length){box.style.display="none";box.innerHTML="";return}
+ box.style.display="block";
+ box.innerHTML='<div class="saints-label">SANTO/I DEL GIORNO · MARTIROLOGIO ROMANO</div>'+list.map((s,i)=>'<button class="saint-link" data-saint="'+i+'">✦ '+esc(s.name)+' <span>'+esc(s.role)+'</span></button>').join("");
+ box.querySelectorAll(".saint-link").forEach(b=>b.onclick=()=>openSaint(list[Number(b.dataset.saint)]));
+}
 function openSaint(s){$("#saintName").textContent=s.name;$("#saintRole").textContent=s.role;$("#saintBio").textContent=s.bio;$("#saintTradition").textContent=s.tradition;$("#saintMeaning").textContent=s.meaning;openView("saint")}function renderDay(d){selected=new Date(d);$("#weekday").textContent=days[d.getDay()]+",";$("#day").textContent=d.getDate();$("#month").textContent=months[d.getMonth()]+" "+d.getFullYear();$("#celebration").textContent="Caricamento…";$("#saintsToday").innerHTML="";$("#saintsToday").style.display="none";$("#liturgicalMeta").innerHTML="";$("#gospelRef").textContent="";$("#gospelText").textContent="";$("#readings").textContent="";$("#gospelToday").textContent="";$("#meditation").textContent="";$("#prayer").textContent="";shown=new Date(d.getFullYear(),d.getMonth(),1);loadDay(d);loadBibleYear(d)}function renderCalendar(){$("#calendarTitle").textContent=months[shown.getMonth()]+" "+shown.getFullYear();const grid=$("#calendarGrid");grid.innerHTML="";const first=(shown.getDay()+6)%7,start=new Date(shown.getFullYear(),shown.getMonth(),1-first),today=new Date();for(let i=0;i<42;i++){const d=new Date(start);d.setDate(start.getDate()+i);const b=document.createElement("button");b.className="day-cell";b.textContent=d.getDate();if(d.getMonth()!==shown.getMonth())b.classList.add("other");if(iso(d)===iso(today))b.classList.add("today");if(iso(d)===iso(selected))b.classList.add("selected");b.onclick=()=>{renderDay(d);renderCalendar();openView("today")};grid.appendChild(b)}}function openView(id){document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v.id===id));document.querySelectorAll(".nav").forEach(n=>n.classList.toggle("active",n.dataset.view===id));if(id==="calendar")renderCalendar()}document.querySelectorAll(".nav").forEach(b=>b.onclick=()=>openView(b.dataset.view));$("#prevMonth").onclick=()=>{shown.setMonth(shown.getMonth()-1);renderCalendar()};$("#nextMonth").onclick=()=>{shown.setMonth(shown.getMonth()+1);renderCalendar()};$("#goToday").onclick=()=>{renderDay(new Date());renderCalendar()};$("#saintBack").onclick=()=>openView("today");if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js");
 
 const BIBLE_YEAR_BOOKS=[
