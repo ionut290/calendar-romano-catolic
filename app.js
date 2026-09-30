@@ -101,6 +101,13 @@ async function loadBibleYear(d){
  btn.onclick=()=>{const rr=JSON.parse(localStorage.getItem("bibleYearRead")||"{}");rr[k]=!rr[k];localStorage.setItem("bibleYearRead",JSON.stringify(rr));loadBibleYear(d)};
  const count=Object.keys(read).filter(k=>k.startsWith(d.getFullYear()+"-")&&read[k]).length,pct=Math.round(count/365*100);$("#bibleProgressText").textContent=count+"/365 giorni letti • "+pct+"%";$("#bibleProgressBar").style.width=pct+"%";
 }
+const Narrator=(()=>{let audio=null,active=null;
+function clean(el){return (el?.innerText||el?.textContent||"").replace(/\s+/g," ").trim()}
+async function generate(text){const endpoint="https://leonelhs-kokoro-tts-italian.hf.space/gradio_api/call/predict";const first=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({data:[text,"im_nicola",0.92]})});if(!first.ok)throw Error("Servizio narratore non disponibile");const j=await first.json();if(!j.event_id)throw Error("Risposta narratore non valida");const r=await fetch(endpoint+"/"+j.event_id);if(!r.ok)throw Error("Audio non disponibile");const raw=await r.text();const lines=raw.split("\n").filter(x=>x.startsWith("data: "));for(const line of lines){try{const data=JSON.parse(line.slice(6));const v=Array.isArray(data)?data[0]:data;if(v?.url)return v.url;if(v?.path&&/^https?:/.test(v.path))return v.path}catch(e){}}throw Error("Audio non ricevuto")}
+function reset(){document.querySelectorAll(".narrate-btn").forEach(b=>{b.textContent="🔊 Ascolta";b.classList.remove("playing")});active=null}
+async function play(btn){if(active===btn&&audio&&!audio.paused){audio.pause();btn.textContent="▶ Riprendi";return}if(active===btn&&audio?.paused){await audio.play();btn.textContent="⏸ Pausa";return}if(audio){audio.pause();audio=null}reset();const el=document.getElementById(btn.dataset.read),text=clean(el);if(!text)return;active=btn;btn.textContent="⏳ Preparo la voce…";btn.disabled=true;try{if(typeof MeditationMusic!=="undefined")MeditationMusic.stop();const url=await generate(text.slice(0,3500));audio=new Audio(url);audio.onended=reset;audio.onerror=reset;await audio.play();btn.textContent="⏸ Pausa";btn.classList.add("playing")}catch(e){console.warn("Narratore:",e);btn.textContent="⚠ Riprova"}finally{btn.disabled=false}}
+function init(){document.querySelectorAll(".narrate-btn").forEach(b=>b.addEventListener("click",()=>play(b)))}
+return{init}})();
 const MeditationMusic=(()=>{
 let audio=null,playing=false;
 const TRACK="https://upload.wikimedia.org/wikipedia/commons/transcoded/7/72/The_Tudor_Consort_-_03_-_Kyrie_Eleison.ogg/The_Tudor_Consort_-_03_-_Kyrie_Eleison.ogg.mp3";
@@ -114,4 +121,4 @@ document.querySelector("#musicYes").onclick=async()=>{localStorage.setItem("medi
 document.querySelector("#musicNo").onclick=()=>{localStorage.setItem("meditationMusic","off");modal.hidden=true;stop()};
 document.querySelector("#musicToggle").onclick=async()=>{if(playing){localStorage.setItem("meditationMusic","off");stop()}else{localStorage.setItem("meditationMusic","on");await start()}}}
 return{init,start,stop}})();
-document.addEventListener("DOMContentLoaded",()=>{renderDay(new Date());renderCalendar();MeditationMusic.init()});
+document.addEventListener("DOMContentLoaded",()=>{renderDay(new Date());renderCalendar();MeditationMusic.init();Narrator.init()});
