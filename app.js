@@ -84,6 +84,16 @@ async function renderSaints(d,x){
  const dateKey=iso(d).replaceAll("-","");
  const ceiUrl="https://www.chiesacattolica.it/santo-del-giorno/?data-liturgia="+dateKey;
  let list=saintsFor(d).map(s=>({...s,source:"Scheda interna"}));
+ // Mostra subito la celebrazione liturgica ricevuta dall'API: non dipende dal proxy CEI.
+ if(!list.length&&x?.celebrazione&&isSaintEvent(String(x.celebrazione))){
+   list=[{name:String(x.celebrazione).replace(/\s*[–-]\s*(MEMORIA|FESTA|SOLENNITÀ|MEMORIA FACOLTATIVA)\s*$/i,"").trim(),role:"Santo del giorno",bio:"Celebrazione del calendario liturgico di oggi.",tradition:"Memoria liturgica della Chiesa cattolica.",meaning:"La testimonianza del santo invita a vivere il Vangelo nella vita quotidiana.",source:"Liturgia del giorno"}];
+   const earlyBox=$("#saintsToday");
+   if(earlyBox){
+     earlyBox.style.display="block";
+     earlyBox.innerHTML='<div class="saints-label">SANTO DEL GIORNO</div><button class="saint-link" data-saint="0">✦ '+esc(list[0].name)+' <span>'+esc(list[0].role)+'</span></button>';
+     earlyBox.querySelector(".saint-link").onclick=()=>openSaint(list[0]);
+   }
+ }
  try{
    const proxy="https://api.allorigins.win/raw?url="+encodeURIComponent(ceiUrl);
    const r=await fetch(proxy,{cache:"no-store"});
