@@ -32,5 +32,6 @@ jobs:
             echo "Nessun aggiornamento"
           else
             git commit -m "Aggiorna dati calendario offline"
-            git push
+            git pull --rebase origin main
+            git push origin main
           fi
