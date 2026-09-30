@@ -276,16 +276,30 @@ async function play(btn){if(active===btn&&audio&&!audio.paused){audio.pause();bt
 function init(){document.querySelectorAll(".narrate-btn").forEach(b=>b.addEventListener("click",()=>play(b)))}
 return{init}})();
 const MeditationMusic=(()=>{
-let audio=null,playing=false;
-const TRACK="https://upload.wikimedia.org/wikipedia/commons/transcoded/7/72/The_Tudor_Consort_-_03_-_Kyrie_Eleison.ogg/The_Tudor_Consort_-_03_-_Kyrie_Eleison.ogg.mp3";
+let audio=null,playing=false,index=0;
+const TRACKS=[
+ {title:"Kyrie Eleison",artist:"The Tudor Consort",url:"https://upload.wikimedia.org/wikipedia/commons/transcoded/7/72/The_Tudor_Consort_-_03_-_Kyrie_Eleison.ogg/The_Tudor_Consort_-_03_-_Kyrie_Eleison.ogg.mp3"},
+ {title:"Ave Maria",artist:"Robert Parsons · St. Paul's Episcopal Church",url:"https://commons.wikimedia.org/wiki/Special:Redirect/file/Ave_Maria_-_Parsons.ogg"},
+ {title:"Ave Maria",artist:"Anton Bruckner · U.S. Navy Sea Chanters",url:"https://commons.wikimedia.org/wiki/Special:Redirect/file/Ave_Maria_(USNB).ogg"},
+ {title:"Gloria gregoriano",artist:"Canto gregoriano",url:"https://commons.wikimedia.org/wiki/Special:Redirect/file/GloriaGregorianChant.ogg"},
+ {title:"Ave Maria",artist:"Alessandro Moreschi",url:"https://commons.wikimedia.org/wiki/Special:Redirect/file/AlessandroMoreschi-AveMaria.ogg"}
+];
 const pref=()=>localStorage.getItem("meditationMusic");
-function ensure(){if(audio)return;audio=new Audio(TRACK);audio.loop=true;audio.preload="metadata";audio.volume=.24;audio.addEventListener("ended",()=>{if(playing){audio.currentTime=0;audio.play().catch(()=>{})}})}
-function update(){const b=document.querySelector("#musicToggle");if(b){b.textContent=playing?"♫":"♪";b.classList.toggle("playing",playing);b.setAttribute("aria-label",playing?"Disattiva canto sacro":"Attiva canto sacro")}}
-async function start(){ensure();try{await audio.play();playing=true;update();return true}catch(e){console.warn("Audio sacro:",e);playing=false;update();return false}}
+function dailyIndex(){const d=new Date(),key=d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate();return key%TRACKS.length}
+function savedIndex(){const v=Number(localStorage.getItem("meditationTrack"));return Number.isInteger(v)&&v>=0&&v<TRACKS.length?v:dailyIndex()}
+function label(){const t=TRACKS[index],el=document.querySelector("#musicTrack");if(el)el.textContent=t.title+" · "+t.artist}
+function ensure(reset=false){if(audio&&!reset)return;if(audio){audio.pause();audio=null}const t=TRACKS[index];audio=new Audio(t.url);audio.preload="metadata";audio.volume=.24;audio.addEventListener("ended",()=>next(true));audio.addEventListener("error",()=>{console.warn("Brano non disponibile:",t.title);if(playing)next(true)})}
+function update(){const b=document.querySelector("#musicToggle");if(b){b.textContent=playing?"♫":"♪";b.classList.toggle("playing",playing);b.setAttribute("aria-label",playing?"Metti in pausa la musica sacra":"Riproduci musica sacra")}const p=document.querySelector("#musicPlay");if(p)p.textContent=playing?"⏸":"▶";label()}
+async function playCurrent(){ensure();try{await audio.play();playing=true;update();return true}catch(e){console.warn("Audio sacro:",e);playing=false;update();return false}}
+async function start(){return playCurrent()}
+function pause(){playing=false;if(audio)audio.pause();update()}
 function stop(){playing=false;if(audio){audio.pause();audio.currentTime=0}update()}
-async function init(){const modal=document.querySelector("#musicConsent");if(!modal)return;const p=pref();if(p===null)modal.hidden=false;else if(p==="on"){const once=async()=>{document.removeEventListener("pointerdown",once);await start()};document.addEventListener("pointerdown",once,{once:true})}
-document.querySelector("#musicYes").onclick=async()=>{localStorage.setItem("meditationMusic","on");modal.hidden=true;await start()};
-document.querySelector("#musicNo").onclick=()=>{localStorage.setItem("meditationMusic","off");modal.hidden=true;stop()};
-document.querySelector("#musicToggle").onclick=async()=>{if(playing){localStorage.setItem("meditationMusic","off");stop()}else{localStorage.setItem("meditationMusic","on");await start()}}}
-return{init,start,stop}})();
+async function select(i,autoplay=playing){index=(i+TRACKS.length)%TRACKS.length;localStorage.setItem("meditationTrack",String(index));ensure(true);update();if(autoplay)await playCurrent()}
+async function next(autoplay=playing){await select(index+1,autoplay)}
+async function prev(){await select(index-1,playing)}
+async function init(){index=savedIndex();update();const modal=document.querySelector("#musicConsent");const p=pref();if(modal){if(p===null)modal.hidden=false;else if(p==="on"){const once=async()=>{document.removeEventListener("pointerdown",once);await start()};document.addEventListener("pointerdown",once,{once:true})}
+const yes=document.querySelector("#musicYes"),no=document.querySelector("#musicNo");if(yes)yes.onclick=async()=>{localStorage.setItem("meditationMusic","on");modal.hidden=true;await start()};if(no)no.onclick=()=>{localStorage.setItem("meditationMusic","off");modal.hidden=true;stop()}}
+const toggle=document.querySelector("#musicToggle");if(toggle)toggle.onclick=async()=>{const panel=document.querySelector("#musicPlayer");if(panel)panel.hidden=!panel.hidden;if(!playing){localStorage.setItem("meditationMusic","on");await start()}};
+const play=document.querySelector("#musicPlay"),n=document.querySelector("#musicNext"),pr=document.querySelector("#musicPrev");if(play)play.onclick=async()=>{if(playing)pause();else{localStorage.setItem("meditationMusic","on");await start()}};if(n)n.onclick=()=>next();if(pr)pr.onclick=()=>prev()}
+return{init,start,stop,next,prev}})();
 document.addEventListener("DOMContentLoaded",()=>{const today=new Date();renderDay(today);renderCalendar();MeditationMusic.init();Narrator.init();setTimeout(()=>preloadLiturgicalWindow(today,30),300);setTimeout(()=>preloadLiturgicalYear(today.getFullYear()),1200);setTimeout(()=>preloadLiturgicalYear(today.getFullYear()+1),5000)});
