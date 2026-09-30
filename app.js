@@ -140,8 +140,48 @@ async function renderSaints(d,x){
  box.innerHTML='<div class="saints-label">SANTO/I DEL GIORNO · MARTIROLOGIO ROMANO</div>'+list.map((s,i)=>'<button class="saint-link" data-saint="'+i+'">✦ '+esc(s.name)+' <span>'+esc(s.role)+'</span></button>').join("");
  box.querySelectorAll(".saint-link").forEach(b=>b.onclick=()=>openSaint(list[Number(b.dataset.saint)]));
 }
-function openSaint(s){$("#saintName").textContent=s.name;$("#saintRole").textContent=s.role;$("#saintBio").textContent=s.bio;$("#saintTradition").textContent=s.tradition;$("#saintMeaning").textContent=s.meaning;openView("saint")}function renderDay(d){selected=new Date(d);$("#weekday").textContent=days[d.getDay()]+",";$("#day").textContent=d.getDate();$("#month").textContent=months[d.getMonth()]+" "+d.getFullYear();$("#celebration").textContent="Caricamento…";$("#saintsToday").innerHTML="";$("#saintsToday").style.display="none";$("#liturgicalMeta").innerHTML="";$("#gospelRef").textContent="";$("#gospelText").textContent="";$("#readings").textContent="";$("#gospelToday").textContent="";$("#meditation").textContent="";$("#prayer").textContent="";shown=new Date(d.getFullYear(),d.getMonth(),1);loadDay(d);loadBibleYear(d)}function renderCalendar(){$("#calendarTitle").textContent=months[shown.getMonth()]+" "+shown.getFullYear();const grid=$("#calendarGrid");grid.innerHTML="";const first=(shown.getDay()+6)%7,start=new Date(shown.getFullYear(),shown.getMonth(),1-first),today=new Date();for(let i=0;i<42;i++){const d=new Date(start);d.setDate(start.getDate()+i);const b=document.createElement("button");b.className="day-cell";b.textContent=d.getDate();if(d.getMonth()!==shown.getMonth())b.classList.add("other");if(iso(d)===iso(today))b.classList.add("today");if(iso(d)===iso(selected))b.classList.add("selected");b.onclick=()=>{renderDay(d);renderCalendar();openView("today")};grid.appendChild(b)}}function openView(id){document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v.id===id));document.querySelectorAll(".nav").forEach(n=>n.classList.toggle("active",n.dataset.view===id));if(id==="calendar")renderCalendar()}document.querySelectorAll(".nav").forEach(b=>b.onclick=()=>openView(b.dataset.view));$("#prevMonth").onclick=()=>{shown.setMonth(shown.getMonth()-1);renderCalendar()};$("#nextMonth").onclick=()=>{shown.setMonth(shown.getMonth()+1);renderCalendar()};$("#goToday").onclick=()=>{renderDay(new Date());renderCalendar()};$("#saintBack").onclick=()=>openView("today");if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js");
+function openSaint(s){$("#saintName").textContent=s.name;$("#saintRole").textContent=s.role;$("#saintBio").textContent=s.bio;$("#saintTradition").textContent=s.tradition;$("#saintMeaning").textContent=s.meaning;openView("saint")}function renderDay(d){selected=new Date(d);$("#weekday").textContent=days[d.getDay()]+",";$("#day").textContent=d.getDate();$("#month").textContent=months[d.getMonth()]+" "+d.getFullYear();$("#celebration").textContent="Caricamento…";$("#saintsToday").innerHTML="";$("#saintsToday").style.display="none";$("#liturgicalMeta").innerHTML="";$("#gospelRef").textContent="";$("#gospelText").textContent="";$("#readings").textContent="";$("#gospelToday").textContent="";$("#meditation").textContent="";$("#prayer").textContent="";shown=new Date(d.getFullYear(),d.getMonth(),1);renderDailyProverb(d);loadDay(d);loadBibleYear(d)}function renderCalendar(){$("#calendarTitle").textContent=months[shown.getMonth()]+" "+shown.getFullYear();const grid=$("#calendarGrid");grid.innerHTML="";const first=(shown.getDay()+6)%7,start=new Date(shown.getFullYear(),shown.getMonth(),1-first),today=new Date();for(let i=0;i<42;i++){const d=new Date(start);d.setDate(start.getDate()+i);const b=document.createElement("button");b.className="day-cell";b.textContent=d.getDate();if(d.getMonth()!==shown.getMonth())b.classList.add("other");if(iso(d)===iso(today))b.classList.add("today");if(iso(d)===iso(selected))b.classList.add("selected");b.onclick=()=>{renderDay(d);renderCalendar();openView("today")};grid.appendChild(b)}}function openView(id){document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v.id===id));document.querySelectorAll(".nav").forEach(n=>n.classList.toggle("active",n.dataset.view===id));if(id==="calendar")renderCalendar()}document.querySelectorAll(".nav").forEach(b=>b.onclick=()=>openView(b.dataset.view));$("#prevMonth").onclick=()=>{shown.setMonth(shown.getMonth()-1);renderCalendar()};$("#nextMonth").onclick=()=>{shown.setMonth(shown.getMonth()+1);renderCalendar()};$("#goToday").onclick=()=>{renderDay(new Date());renderCalendar()};$("#saintBack").onclick=()=>openView("today");if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js");
 
+const DAILY_PROVERBS=[
+["Pr 1,7","Il timore del Signore è principio della conoscenza."],
+["Pr 3,5","Confida nel Signore con tutto il cuore e non appoggiarti sulla tua intelligenza."],
+["Pr 3,6","In tutti i tuoi passi pensa a lui ed egli appianerà i tuoi sentieri."],
+["Pr 3,27","Non negare un bene a chi ne ha diritto, se hai la possibilità di farlo."],
+["Pr 4,23","Più di ogni cosa degna di cura custodisci il tuo cuore, perché da esso sgorga la vita."],
+["Pr 10,12","L'odio suscita litigi, l'amore ricopre ogni colpa."],
+["Pr 11,25","La persona generosa sarà colmata e chi disseta sarà dissetato."],
+["Pr 12,18","C'è chi parla senza riflettere: trafigge come una spada, ma la lingua dei saggi risana."],
+["Pr 13,20","Chi va con i saggi diventa saggio, chi pratica gli stolti ne subirà danno."],
+["Pr 14,31","Chi opprime il povero offende il suo creatore, chi ha pietà del misero lo onora."],
+["Pr 15,1","Una risposta gentile calma la collera, una parola pungente eccita l'ira."],
+["Pr 15,3","In ogni luogo sono gli occhi del Signore, scrutano i cattivi e i buoni."],
+["Pr 15,13","Un cuore lieto dà serenità al volto, ma quando il cuore è triste lo spirito è depresso."],
+["Pr 15,16","È meglio aver poco con il timore di Dio che un grande tesoro con inquietudine."],
+["Pr 16,3","Affida al Signore le tue opere e i tuoi progetti avranno efficacia."],
+["Pr 16,9","Il cuore dell'uomo elabora progetti, ma è il Signore che rende saldi i suoi passi."],
+["Pr 16,18","Prima della rovina viene l'orgoglio e prima della caduta lo spirito altero."],
+["Pr 16,24","Favo di miele sono le parole gentili, dolcezza per l'anima e refrigerio per il corpo."],
+["Pr 17,17","Un amico vuol bene sempre, è nato per essere un fratello nella sventura."],
+["Pr 17,22","Un cuore lieto fa bene al corpo, uno spirito abbattuto inaridisce le ossa."],
+["Pr 18,10","Torre fortificata è il nome del Signore: il giusto vi si rifugia ed è al sicuro."],
+["Pr 18,21","Morte e vita sono in potere della lingua e chi ne fa buon uso ne mangerà i frutti."],
+["Pr 19,11","È avvedutezza per l'uomo rimandare lo sdegno ed è sua gloria passare sopra alle offese."],
+["Pr 19,17","Chi ha pietà del povero fa un prestito al Signore, che gli darà la sua ricompensa."],
+["Pr 20,22","Non dire: «Renderò male per male»; confida nel Signore ed egli ti salverà."],
+["Pr 21,3","Praticare la giustizia e l'equità per il Signore vale più di un sacrificio."],
+["Pr 22,1","Un buon nome vale più di grandi ricchezze e la benevolenza altrui più dell'argento e dell'oro."],
+["Pr 24,16","Il giusto cade sette volte e si rialza, mentre i malvagi soccombono nella sventura."],
+["Pr 27,17","Il ferro si aguzza con il ferro e l'uomo aguzza l'ingegno del suo compagno."],
+["Pr 28,13","Chi nasconde le proprie colpe non avrà successo; chi le confessa e le abbandona troverà misericordia."],
+["Pr 31,8","Apri la bocca in favore del muto, per difendere i diritti di tutti gli sventurati."]
+];
+function renderDailyProverb(d){
+ const start=new Date(d.getFullYear(),0,1),day=Math.floor((new Date(d.getFullYear(),d.getMonth(),d.getDate())-start)/86400000);
+ const p=DAILY_PROVERBS[day%DAILY_PROVERBS.length];
+ const ref=$("#dailyProverbRef"),txt=$("#dailyProverbText");
+ if(ref)ref.textContent=p[0];
+ if(txt)txt.textContent=p[1];
+}
 const BIBLE_YEAR_BOOKS=[
 ["Genesi",50],["Esodo",40],["Levitico",27],["Numeri",36],["Deuteronomio",34],["Giosuè",24],["Giudici",21],["Rut",4],["1 Samuele",31],["2 Samuele",24],["1 Re",22],["2 Re",25],["1 Cronache",29],["2 Cronache",36],["Esdra",10],["Neemia",13],["Tobia",14],["Giuditta",16],["Ester",16],["1 Maccabei",16],["2 Maccabei",15],["Giobbe",42],["Salmi",150],["Proverbi",31],["Qoelet",12],["Cantico dei Cantici",8],["Sapienza",19],["Siracide",51],["Isaia",66],["Geremia",52],["Lamentazioni",5],["Baruc",6],["Ezechiele",48],["Daniele",14],["Osea",14],["Gioele",4],["Amos",9],["Abdia",1],["Giona",4],["Michea",7],["Naum",3],["Abacuc",3],["Sofonia",3],["Aggeo",2],["Zaccaria",14],["Malachia",3],["Matteo",28],["Marco",16],["Luca",24],["Giovanni",21],["Atti degli Apostoli",28],["Romani",16],["1 Corinzi",16],["2 Corinzi",13],["Galati",6],["Efesini",6],["Filippesi",4],["Colossesi",4],["1 Tessalonicesi",5],["2 Tessalonicesi",3],["1 Timoteo",6],["2 Timoteo",4],["Tito",3],["Filemone",1],["Ebrei",13],["Giacomo",5],["1 Pietro",5],["2 Pietro",3],["1 Giovanni",5],["2 Giovanni",1],["3 Giovanni",1],["Giuda",1],["Apocalisse",22]
 ];
