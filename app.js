@@ -309,7 +309,16 @@ async function loadBibleYear(d){
 }
 const Narrator=(()=>{let audio=null,active=null;
 const PREGENERATED_BASE="/audio/nicola/";
-function clean(el){return (el?.innerText||el?.textContent||"").replace(/\s+/g," ").trim()}
+function clean(el){
+ if(!el)return"";
+ const clone=el.cloneNode(true);
+ // Elimina dalla lettura elementi di interfaccia, riferimenti e numeri dei versetti.
+ clone.querySelectorAll("sup,.reference,.modern-label,.eyebrow,.status,.hint,button,.gospel-question strong,.gospel-action strong").forEach(n=>n.remove());
+ let text=(clone.innerText||clone.textContent||"");
+ // Pulisce eventuali numeri di versetto rimasti all'inizio di una riga/frase.
+ text=text.replace(/(^|\n)\s*\d{1,3}\s+(?=[A-ZÀ-Ý])/g,"$1");
+ return text.replace(/\s+/g," ").trim();
+}
 function safeKey(btn){const d=new Date(window.selectedDate||Date.now()),day=[d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-");return day+"-"+btn.dataset.read+".mp3"}
 async function prerecorded(btn){const url=PREGENERATED_BASE+safeKey(btn);try{const r=await fetch(url,{method:"HEAD",cache:"force-cache"});return r.ok?url:null}catch(e){return null}}
 async function generate(text){const endpoint="https://leonelhs-kokoro-tts-italian.hf.space/gradio_api/call/predict";const first=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({data:[text,"im_nicola",0.92]})});if(!first.ok)throw Error("Servizio narratore non disponibile");const j=await first.json();if(!j.event_id)throw Error("Risposta narratore non valida");const r=await fetch(endpoint+"/"+j.event_id);if(!r.ok)throw Error("Audio non disponibile");const raw=await r.text();for(const line of raw.split("\n").filter(x=>x.startsWith("data: "))){try{const data=JSON.parse(line.slice(6)),v=Array.isArray(data)?data[0]:data;if(v?.url)return v.url;if(v?.path&&/^https?:/.test(v.path))return v.path}catch(e){}}throw Error("Audio non ricevuto")}
