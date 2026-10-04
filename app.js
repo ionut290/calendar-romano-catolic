@@ -86,11 +86,53 @@ async function loadYearBundle(year){
   return data;
  }catch(e){console.warn("Bundle annuale",year,e);return null}
 }
-async function loadDay(d){const dayKey=iso(d),cacheKey="liturgia:"+dayKey;let cached=null;try{const saved=localStorage.getItem(cacheKey);if(saved)cached=JSON.parse(saved)}catch(e){}$("#status").textContent=cached?"":"Caricamento dei dati liturgici…";try{const mm=String(d.getMonth()+1).padStart(2,"0"),dd=String(d.getDate()).padStart(2,"0");let x=cached;if(!x){const bundle=await loadYearBundle(d.getFullYear());x=bundle?.days?.[dayKey]||null;if(x)try{localStorage.setItem(cacheKey,JSON.stringify(x))}catch(e){}if(!x){const r=await fetch(API+"/"+d.getFullYear()+"/"+mm+"-"+dd+".json");if(!r.ok)throw Error("Dati non disponibili");x=await r.json();try{localStorage.setItem(cacheKey,JSON.stringify(x))}catch(e){}}}if(iso(d)!==iso(selected))return;const saints=await getSaintsForDay(d,x);
-const heroSaint=saints[0];
-$("#celebration").textContent=heroSaint?.name||x.celebrazione||"Santo del giorno";
-const heroRole=$("#saintHeroRole");if(heroRole)heroRole.textContent=heroSaint?.role||"";
-renderSaintsList(d,x,saints);$("#liturgicalMeta").innerHTML='<div class="meta"><span class="vestment '+colorClass(x.colore)+'"></span><strong>'+esc(cap(x.colore||""))+"</strong></div>";const g=x.letture?.vangelo;$("#gospelRef").textContent=g?.riferimento||"";if(g?.riferimento){const gospelKey="vangelo:"+dayKey;let cei="";try{cei=localStorage.getItem(gospelKey)||""}catch(e){}if(!cei){cei=await loadCei2008(g.riferimento);if(cei)try{localStorage.setItem(gospelKey,cei)}catch(e){}}$("#gospelText").innerHTML=cei|| (g?.testo?verses(g.testo):"Testo del Vangelo non disponibile.")}else $("#gospelText").textContent="Testo del Vangelo non disponibile.";$("#readings").innerHTML=reading("Prima lettura",x.letture?.prima)+reading("Salmo",x.letture?.salmo)+reading("Seconda lettura",x.letture?.seconda)+reading("Vangelo",g);$("#gospelToday").innerHTML=liveGospelToday(x);$("#meditation").textContent=meditation(x);$("#prayer").textContent=prayer(x);$("#status").textContent=""}catch(e){$("#status").textContent="I dati liturgici per questa data non sono disponibili.";$("#celebration").textContent="Calendario liturgico";$("#gospelText").textContent="Impossibile caricare il Vangelo."}}async function preloadLiturgicalYear(year=new Date().getFullYear()){
+async function loadDay(d){
+ const dayKey=iso(d),cacheKey="liturgia:"+dayKey;let x=null;
+ try{const saved=localStorage.getItem(cacheKey);if(saved)x=JSON.parse(saved)}catch(e){}
+ $("#status").textContent=x?"":"Caricamento dei dati liturgici…";
+ try{
+  if(!x){
+   const mm=String(d.getMonth()+1).padStart(2,"0"),dd=String(d.getDate()).padStart(2,"0");
+   const r=await fetch(API+"/"+d.getFullYear()+"/"+mm+"-"+dd+".json",{cache:"force-cache"});
+   if(!r.ok)throw Error("Dati non disponibili");
+   x=await r.json();
+   try{localStorage.setItem(cacheKey,JSON.stringify(x))}catch(e){}
+  }
+  if(iso(d)!==iso(selected))return;
+
+  // Mostra subito tutti i dati già disponibili: santo remoto e CEI arrivano dopo.
+  const localSaints=saintsFor(d);
+  const fallbackSaint=localSaints[0];
+  $("#celebration").textContent=fallbackSaint?.name||x.celebrazione||"Calendario liturgico";
+  const heroRole=$("#saintHeroRole");if(heroRole)heroRole.textContent=fallbackSaint?.role||"";
+  $("#liturgicalMeta").innerHTML='<div class="meta"><span class="vestment '+colorClass(x.colore)+'"></span><strong>'+esc(cap(x.colore||""))+"</strong></div>";
+  const g=x.letture?.vangelo;
+  $("#gospelRef").textContent=g?.riferimento||"";
+  $("#gospelText").innerHTML=g?.testo?verses(g.testo):"Testo del Vangelo non disponibile.";
+  $("#readings").innerHTML=reading("Prima lettura",x.letture?.prima)+reading("Salmo",x.letture?.salmo)+reading("Seconda lettura",x.letture?.seconda)+reading("Vangelo",g);
+  $("#gospelToday").innerHTML=liveGospelToday(x);
+  $("#meditation").textContent=meditation(x);
+  $("#prayer").textContent=prayer(x);
+  $("#status").textContent="";
+
+  // Aggiornamenti non bloccanti: non rallentano più l'apertura dell'app.
+  if(g?.riferimento){
+   (async()=>{let cei="";try{cei=localStorage.getItem("vangelo:"+dayKey)||""}catch(e){}
+    if(!cei){cei=await loadCei2008(g.riferimento);if(cei)try{localStorage.setItem("vangelo:"+dayKey,cei)}catch(e){}}
+    if(cei&&iso(d)===iso(selected))$("#gospelText").innerHTML=cei;
+   })();
+  }
+  (async()=>{try{const saints=await getSaintsForDay(d,x);if(iso(d)!==iso(selected))return;const hero=saints[0];
+   if(hero){$("#celebration").textContent=hero.name||x.celebrazione||"Santo del giorno";if(heroRole)heroRole.textContent=hero.role||""}
+   renderSaintsList(d,x,saints);
+  }catch(e){console.warn("Santi:",e)}})();
+ }catch(e){
+  $("#status").textContent="I dati liturgici per questa data non sono disponibili.";
+  $("#celebration").textContent="Calendario liturgico";
+  $("#gospelText").textContent="Impossibile caricare il Vangelo.";
+ }
+}
+async function preloadLiturgicalYear(year=new Date().getFullYear()){
  const marker="liturgia-preloaded:"+year;
  const bundle=await loadYearBundle(year);if(bundle)return;
  if(localStorage.getItem(marker)==="1")return;
@@ -206,7 +248,7 @@ function renderSaintsList(d,x,list){
  box.innerHTML='<div class="saints-label">ALTRI SANTI DEL GIORNO · MARTIROLOGIO ROMANO</div>'+others.map((s,i)=>'<button class="saint-link" data-saint="'+i+'">✦ '+esc(s.name)+' <span>'+esc(s.role)+'</span></button>').join("");
  box.querySelectorAll(".saint-link").forEach(b=>b.onclick=()=>openSaint(others[Number(b.dataset.saint)]));
 }
-function openSaint(s){$("#saintName").textContent=s.name;$("#saintRole").textContent=s.role;$("#saintBio").textContent=s.bio;$("#saintTradition").textContent=s.tradition;$("#saintMeaning").textContent=s.meaning;openView("saint")}function renderDay(d){selected=new Date(d);$("#weekday").textContent=days[d.getDay()]+",";$("#day").textContent=d.getDate();$("#month").textContent=months[d.getMonth()]+" "+d.getFullYear();$("#celebration").textContent="Caricamento…";const shr=$("#saintHeroRole");if(shr)shr.textContent="";$("#saintsToday").innerHTML="";$("#saintsToday").style.display="none";$("#liturgicalMeta").innerHTML="";$("#gospelRef").textContent="";$("#gospelText").textContent="";$("#readings").textContent="";$("#gospelToday").textContent="";$("#meditation").textContent="";$("#prayer").textContent="";shown=new Date(d.getFullYear(),d.getMonth(),1);renderDailyProverb(d);loadDay(d);loadBibleYear(d)}function renderCalendar(){$("#calendarTitle").textContent=months[shown.getMonth()]+" "+shown.getFullYear();const grid=$("#calendarGrid");grid.innerHTML="";const first=(shown.getDay()+6)%7,start=new Date(shown.getFullYear(),shown.getMonth(),1-first),today=new Date();for(let i=0;i<42;i++){const d=new Date(start);d.setDate(start.getDate()+i);const b=document.createElement("button");b.className="day-cell";b.textContent=d.getDate();if(d.getMonth()!==shown.getMonth())b.classList.add("other");if(iso(d)===iso(today))b.classList.add("today");if(iso(d)===iso(selected))b.classList.add("selected");b.onclick=()=>{renderDay(d);renderCalendar();openView("today")};grid.appendChild(b)}}function openView(id){document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v.id===id));document.querySelectorAll(".nav").forEach(n=>n.classList.toggle("active",n.dataset.view===id));if(id==="calendar")renderCalendar()}document.querySelectorAll(".nav").forEach(b=>b.onclick=()=>openView(b.dataset.view));$("#prevMonth").onclick=()=>{shown.setMonth(shown.getMonth()-1);renderCalendar()};$("#nextMonth").onclick=()=>{shown.setMonth(shown.getMonth()+1);renderCalendar()};$("#goToday").onclick=()=>{renderDay(new Date());renderCalendar()};$("#saintBack").onclick=()=>openView("today");if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js");
+function openSaint(s){$("#saintName").textContent=s.name;$("#saintRole").textContent=s.role;$("#saintBio").textContent=s.bio;$("#saintTradition").textContent=s.tradition;$("#saintMeaning").textContent=s.meaning;openView("saint")}function renderDay(d){selected=new Date(d);$("#weekday").textContent=days[d.getDay()]+",";$("#day").textContent=d.getDate();$("#month").textContent=months[d.getMonth()]+" "+d.getFullYear();$("#celebration").textContent="Caricamento…";const shr=$("#saintHeroRole");if(shr)shr.textContent="";$("#saintsToday").innerHTML="";$("#saintsToday").style.display="none";$("#liturgicalMeta").innerHTML="";$("#gospelRef").textContent="";$("#gospelText").textContent="";$("#readings").textContent="";$("#gospelToday").textContent="";$("#meditation").textContent="";$("#prayer").textContent="";shown=new Date(d.getFullYear(),d.getMonth(),1);renderDailyProverb(d);loadDay(d);setTimeout(()=>{if(iso(d)===iso(selected))loadBibleYear(d)},900)}function renderCalendar(){$("#calendarTitle").textContent=months[shown.getMonth()]+" "+shown.getFullYear();const grid=$("#calendarGrid");grid.innerHTML="";const first=(shown.getDay()+6)%7,start=new Date(shown.getFullYear(),shown.getMonth(),1-first),today=new Date();for(let i=0;i<42;i++){const d=new Date(start);d.setDate(start.getDate()+i);const b=document.createElement("button");b.className="day-cell";b.textContent=d.getDate();if(d.getMonth()!==shown.getMonth())b.classList.add("other");if(iso(d)===iso(today))b.classList.add("today");if(iso(d)===iso(selected))b.classList.add("selected");b.onclick=()=>{renderDay(d);renderCalendar();openView("today")};grid.appendChild(b)}}function openView(id){document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v.id===id));document.querySelectorAll(".nav").forEach(n=>n.classList.toggle("active",n.dataset.view===id));if(id==="calendar")renderCalendar()}document.querySelectorAll(".nav").forEach(b=>b.onclick=()=>openView(b.dataset.view));$("#prevMonth").onclick=()=>{shown.setMonth(shown.getMonth()-1);renderCalendar()};$("#nextMonth").onclick=()=>{shown.setMonth(shown.getMonth()+1);renderCalendar()};$("#goToday").onclick=()=>{renderDay(new Date());renderCalendar()};$("#saintBack").onclick=()=>openView("today");if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js");
 
 const DAILY_PROVERBS=[
 ["Pr 1,7","Il timore del Signore è principio della conoscenza."],
@@ -302,4 +344,4 @@ const yes=document.querySelector("#musicYes"),no=document.querySelector("#musicN
 const toggle=document.querySelector("#musicToggle");if(toggle)toggle.onclick=async()=>{const panel=document.querySelector("#musicPlayer");if(panel)panel.hidden=!panel.hidden;if(!playing){localStorage.setItem("meditationMusic","on");await start()}};
 const play=document.querySelector("#musicPlay"),n=document.querySelector("#musicNext"),pr=document.querySelector("#musicPrev");if(play)play.onclick=async()=>{if(playing)pause();else{localStorage.setItem("meditationMusic","on");await start()}};if(n)n.onclick=()=>next();if(pr)pr.onclick=()=>prev()}
 return{init,start,stop,next,prev}})();
-document.addEventListener("DOMContentLoaded",()=>{const today=new Date();renderDay(today);renderCalendar();MeditationMusic.init();Narrator.init();setTimeout(()=>preloadLiturgicalWindow(today,30),300);setTimeout(()=>preloadLiturgicalYear(today.getFullYear()),1200);setTimeout(()=>preloadLiturgicalYear(today.getFullYear()+1),5000)});
+document.addEventListener("DOMContentLoaded",()=>{const today=new Date();renderDay(today);renderCalendar();MeditationMusic.init();Narrator.init();const warm=()=>preloadLiturgicalWindow(today,3);if("requestIdleCallback"in window)requestIdleCallback(warm,{timeout:6000});else setTimeout(warm,4000)});
