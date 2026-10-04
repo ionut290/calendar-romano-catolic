@@ -92,10 +92,17 @@ async function loadDay(d){
  $("#status").textContent=x?"":"Caricamento dei dati liturgici…";
  try{
   if(!x){
-   const mm=String(d.getMonth()+1).padStart(2,"0"),dd=String(d.getDate()).padStart(2,"0");
-   const r=await fetch(API+"/"+d.getFullYear()+"/"+mm+"-"+dd+".json",{cache:"force-cache"});
-   if(!r.ok)throw Error("Dati non disponibili");
-   x=await r.json();
+   // Fonte principale: liturgia ufficiale CEI. Parola Viva resta come fallback.
+   try{
+    const cei=await fetch("/cei-liturgia?date="+encodeURIComponent(dayKey),{cache:"force-cache"});
+    if(cei.ok){const cx=await cei.json();if(cx?.letture?.vangelo?.testo)x=cx}
+   }catch(e){console.warn("CEI liturgia:",e)}
+   if(!x){
+    const mm=String(d.getMonth()+1).padStart(2,"0"),dd=String(d.getDate()).padStart(2,"0");
+    const r=await fetch(API+"/"+d.getFullYear()+"/"+mm+"-"+dd+".json",{cache:"force-cache"});
+    if(!r.ok)throw Error("Dati non disponibili");
+    x=await r.json();
+   }
    try{localStorage.setItem(cacheKey,JSON.stringify(x))}catch(e){}
   }
   if(iso(d)!==iso(selected))return;
