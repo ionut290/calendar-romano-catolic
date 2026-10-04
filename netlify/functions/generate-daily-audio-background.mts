@@ -52,7 +52,7 @@ async function tts(text){const first=await fetch(KOKORO,{method:"POST",headers:{
 async function save(store,date,key,text){text=clean(text);if(!text)return;try{const old=await store.getMetadata(date+"/"+key+".mp3");if(old)return}catch{}const a=await tts(text);await store.set(date+"/"+key+".mp3",a)}
 export default async(req)=>{
  const body=await req.json().catch(()=>({})),date=body.date;if(!/^\d{4}-\d{2}-\d{2}$/.test(date||""))return;
- const [y,m,d]=date.split("-"),r=await fetch(API+"/"+y+"/"+m+"-"+d+".json");if(!r.ok)throw Error("Liturgia");const x=await r.json(),g=x.letture?.vangelo,store=getStore("daily-narration"),reflection=dailyReflection(x);
+ const [y,m,d]=date.split("-");let x:any=null;try{const cr=await fetch(new URL("/cei-liturgia?date="+encodeURIComponent(date),req.url).href);if(cr.ok){const cx=await cr.json();if(cx?.letture?.vangelo?.testo)x=cx}}catch(e){console.warn("CEI audio fallback",e)}if(!x){const r=await fetch(API+"/"+y+"/"+m+"-"+d+".json");if(!r.ok)throw Error("Liturgia");x=await r.json()}const g=x.letture?.vangelo,store=getStore("daily-narration"),reflection=dailyReflection(x);
  const gospel=await bible(g?.riferimento)||plain(g?.testo);
  const readings=[["Prima lettura",x.letture?.prima],["Salmo",x.letture?.salmo],["Seconda lettura",x.letture?.seconda],["Vangelo",g]].filter(([,v])=>v).map(([l,v])=>l+". "+plain(v?.testo)).join(" ");
  const dt=new Date(y+"-"+m+"-"+d+"T12:00:00Z"),start=new Date(Date.UTC(+y,0,1,12)),day=Math.min(Math.floor((dt-start)/86400000)+1,365);
