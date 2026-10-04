@@ -86,25 +86,24 @@ async function loadYearBundle(year){
   return data;
  }catch(e){console.warn("Bundle annuale",year,e);return null}
 }
-async function loadDay(d){
- const dayKey=iso(d),cacheKey="liturgia:"+dayKey;let x=null;
- try{const saved=localStorage.getItem(cacheKey);if(saved)x=JSON.parse(saved)}catch(e){}
- $("#status").textContent=x?"":"Caricamento dei dati liturgici…";
+async function canonicalLiturgy(d){
+ const key="liturgia-cei-v2:"+iso(d);let saved=null;
+ try{saved=JSON.parse(localStorage.getItem(key)||"null")}catch(e){}
  try{
-  if(!x){
-   // Fonte principale: liturgia ufficiale CEI. Parola Viva resta come fallback.
-   try{
-    const cei=await fetch("/cei-liturgia?date="+encodeURIComponent(dayKey),{cache:"force-cache"});
-    if(cei.ok){const cx=await cei.json();if(cx?.letture?.vangelo?.testo)x=cx}
-   }catch(e){console.warn("CEI liturgia:",e)}
-   if(!x){
-    const mm=String(d.getMonth()+1).padStart(2,"0"),dd=String(d.getDate()).padStart(2,"0");
-    const r=await fetch(API+"/"+d.getFullYear()+"/"+mm+"-"+dd+".json",{cache:"force-cache"});
-    if(!r.ok)throw Error("Dati non disponibili");
-    x=await r.json();
-   }
-   try{localStorage.setItem(cacheKey,JSON.stringify(x))}catch(e){}
-  }
+  const response=await fetch("/cei-liturgia?date="+encodeURIComponent(iso(d)),{cache:"no-store"});
+  if(!response.ok)throw Error("CEI unavailable");
+  const data=await response.json();
+  if(data.source!=="CEI"||!data.letture?.vangelo?.testo)throw Error("Incomplete CEI liturgy");
+  try{localStorage.setItem(key,JSON.stringify(data))}catch(e){}
+  return data;
+ }catch(error){if(saved?.source==="CEI"&&saved.letture?.vangelo?.testo)return saved;throw error}
+}
+async function loadDay(d){
+ let x=null;
+ const dayKey=iso(d);
+ $("#status").textContent="Caricamento dei dati liturgici…";
+ try{
+  x=await canonicalLiturgy(d);
   if(iso(d)!==iso(selected))return;
 
   // Mostra subito tutti i dati già disponibili: santo remoto e CEI arrivano dopo.
@@ -123,7 +122,7 @@ async function loadDay(d){
   $("#status").textContent="";
 
   // Aggiornamenti non bloccanti: non rallentano più l'apertura dell'app.
-  if(g?.riferimento){
+  if(x.source!=="CEI"&&g?.riferimento){
    (async()=>{let cei="";try{cei=localStorage.getItem("vangelo:"+dayKey)||""}catch(e){}
     if(!cei){cei=await loadCei2008(g.riferimento);if(cei)try{localStorage.setItem("vangelo:"+dayKey,cei)}catch(e){}}
     if(cei&&iso(d)===iso(selected))$("#gospelText").innerHTML=cei;
@@ -170,16 +169,8 @@ async function preloadLiturgicalYear(year=new Date().getFullYear()){
 }
 async function preloadLiturgicalWindow(center=new Date(),days=14){
  for(let n=-2;n<=days;n++){
-   const d=new Date(center.getFullYear(),center.getMonth(),center.getDate()+n),k=iso(d),lk="liturgia:"+k;
-   try{
-     if(localStorage.getItem(lk))continue;
-     const mm=String(d.getMonth()+1).padStart(2,"0"),dd=String(d.getDate()).padStart(2,"0"),r=await fetch(API+"/"+d.getFullYear()+"/"+mm+"-"+dd+".json",{cache:"force-cache"});
-     if(!r.ok)continue;
-     const x=await r.json();
-     localStorage.setItem(lk,JSON.stringify(x));
-     const ref=x.letture?.vangelo?.riferimento;
-     if(ref&&!localStorage.getItem("vangelo:"+k)){const text=await loadCei2008(ref);if(text)localStorage.setItem("vangelo:"+k,text)}
-   }catch(e){console.warn("Precaricamento",k,e)}
+  const d=new Date(center.getFullYear(),center.getMonth(),center.getDate()+n);
+  try{await canonicalLiturgy(d)}catch(error){console.warn("Precaricamento CEI",iso(d),error)}
  }
 }
 function saintsFor(d){return SAINTS[String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")]||[]}
@@ -262,9 +253,9 @@ function openSaint(s){$("#saintName").textContent=s.name;$("#saintRole").textCon
  }).catch(console.warn);
 }
 try{
- if(localStorage.getItem("app-content-version")!=="2026-10-04-v35"){
+ if(localStorage.getItem("app-content-version")!=="2026-10-04-v36"){
   for(const key of Object.keys(localStorage)){if(key.startsWith("liturgia:")||key.startsWith("liturgia-preloaded:"))localStorage.removeItem(key)}
-  localStorage.setItem("app-content-version","2026-10-04-v35");
+  localStorage.setItem("app-content-version","2026-10-04-v36");
  }
 }catch(error){console.warn("Content cache update",error)}
 
