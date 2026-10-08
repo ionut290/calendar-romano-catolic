@@ -1,0 +1,8 @@
+# Firebase Web API key is a public client identifier, not a server credential.
+# Only this exact false-positive is excluded; other secrets remain scanned.
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+[build.environment]
+  SECRETS_SCAN_SMART_DETECTION_OMIT_VALUES = "AIzaSyBqLHY8JlwEgnwrzyuFacf46CBzGMDYcQI"
