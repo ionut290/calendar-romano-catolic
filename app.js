@@ -87,6 +87,11 @@ async function loadYearBundle(year){
  }catch(e){console.warn("Bundle annuale",year,e);return null}
 }
 async function canonicalLiturgy(d){
+ // Firestore is primary only for the current Italian day. Keep old provider as fallback.
+ if(window.CalendarFirebaseDaily && iso(d)===window.CalendarFirebaseDaily.todayInRome()){
+  const firebaseDay=await window.CalendarFirebaseDaily.read(iso(d));
+  if(firebaseDay)return firebaseDay;
+ }
  const key="liturgia-cei-v2:"+iso(d);let saved=null;
  try{saved=JSON.parse(localStorage.getItem(key)||"null")}catch(e){}
  try{
