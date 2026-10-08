@@ -1,0 +1,10 @@
+node_modules/
+android-web/
+android/
+.gradle/
+*.keystore
+*.jks
+*.aab
+*.apk
+gha-creds-*.json
+.env
