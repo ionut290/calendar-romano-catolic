@@ -82,15 +82,14 @@ def main():
         if datetime.now(ZoneInfo("Europe/Rome")).hour != 0:
             print("Not Italian midnight hour; skipping.")
             return
-    import google.oauth2.service_account
-    raw_secret = os.environ.get("FIREBASE_SERVICE_ACCOUNT", "")
-    if not raw_secret:
-        raise RuntimeError("Set FIREBASE_SERVICE_ACCOUNT GitHub Actions secret; no Firebase data changed")
-    info = json.loads(raw_secret)
-    if info.get("project_id") != PROJECT:
-        raise RuntimeError("Service account project mismatch; no Firebase data changed")
-    creds = google.oauth2.service_account.Credentials.from_service_account_info(
-        info, scopes=["https://www.googleapis.com/auth/datastore"])
+    # GitHub OIDC -> Workload Identity Federation -> dedicated service account.
+    # google-github-actions/auth provides GOOGLE_APPLICATION_CREDENTIALS.
+    if not os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
+        raise RuntimeError("GitHub Workload Identity credentials unavailable; refusing writes")
+    creds, authenticated_project = google.auth.default(
+        scopes=["https://www.googleapis.com/auth/datastore"])
+    if authenticated_project and authenticated_project != PROJECT:
+        raise RuntimeError("Authenticated Google Cloud project differs; refusing writes")
     session = AuthorizedSession(creds)
     url = ROOT + "/dailyLiturgies/" + DATE
     existing = session.get(url, timeout=25)
