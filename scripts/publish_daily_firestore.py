@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Publish one verified CEI liturgy per Italian day in isolated Firebase project.
-Requires FIREBASE_SERVICE_ACCOUNT secret and google-auth, beautifulsoup4.
+Uses GitHub OIDC and short-lived federated Google credentials; no JSON key.
 Runs in GitHub Actions; NEVER place service account data into the repository.
 """
 import json
