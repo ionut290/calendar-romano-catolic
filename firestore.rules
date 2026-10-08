@@ -1,0 +1,13 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Public, read-only liturgy for a given day. Only trusted Admin SDK can publish.
+    match /dailyLiturgies/{dateId} {
+      allow get: if dateId.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
+      allow list, create, update, delete: if false;
+    }
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
