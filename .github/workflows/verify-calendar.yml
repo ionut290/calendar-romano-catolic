@@ -1,0 +1,53 @@
+name: Verifica calendario
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'app.js'
+      - 'firebase-daily.js'
+      - 'sw.js'
+      - 'scripts/publish_daily_firestore.py'
+      - '.github/workflows/verify-calendar.yml'
+  pull_request:
+    paths:
+      - 'app.js'
+      - 'firebase-daily.js'
+      - 'sw.js'
+      - 'scripts/publish_daily_firestore.py'
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verifica sintassi Javascript
+        run: |
+          node --check app.js
+          node --check firebase-daily.js
+          node --check sw.js
+      - name: Verifica sintassi Python
+        run: python -m py_compile scripts/publish_daily_firestore.py
+      - name: Verifica configurazione base Firebase
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          alias=json.loads(Path('.firebaserc').read_text())
+          assert alias['projects']['default']=='ore-l-766fb'
+          index=Path('index.html').read_text()
+          assert index.index('firebase-daily.js')<index.index('app.js')
+          sw=Path('sw.js').read_text()
+          assert './firebase-daily.js' in sw
+          print('OK: Firebase dedicato, ordine degli script e cache PWA.')
+          PY
