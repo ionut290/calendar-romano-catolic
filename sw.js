@@ -1,5 +1,5 @@
-const CACHE="calendario-cattolico-v36";
-const ASSETS=["./","./index.html","./style.css","./app.js","./manifest.webmanifest"];
+const CACHE="calendario-cattolico-v37";
+const ASSETS=["./","./index.html","./style.css","./app.js","./firebase-daily.js","./manifest.webmanifest"];
 self.addEventListener("install",event=>{
  event.waitUntil((async()=>{const cache=await caches.open(CACHE);for(const asset of ASSETS){const response=await fetch(new Request(asset,{cache:"reload"}));if(!response.ok)throw Error("Asset unavailable");await cache.put(asset,response)}await self.skipWaiting()})());
 });
