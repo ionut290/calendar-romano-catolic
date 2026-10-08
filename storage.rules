@@ -1,0 +1,15 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // The scheduled backend (Admin SDK) writes and deletes the MP3 files.
+    // These recordings are intended to be publicly accessible by calendar users.
+    match /daily-audio/{dateId}/{fileName} {
+      allow read: if dateId.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+                  && fileName.matches('^[A-Za-z0-9_-]+\\.mp3$');
+      allow write: if false;
+    }
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
