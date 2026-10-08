@@ -114,10 +114,10 @@ def main():
     listing.raise_for_status()
     for doc in listing.json().get("documents", []):
         date_id = doc["name"].rsplit("/", 1)[-1]
-        if re.fullmatch(r"\d{4}-\d{2}-\d{2}", date_id) and date_id < DATE:
+        if re.fullmatch(r"\d{4}-\d{2}-\d{2}", date_id) and date_id != DATE:
             deletion = session.delete(ROOT + "/dailyLiturgies/" + date_id, timeout=30)
             deletion.raise_for_status()
-            print("Removed previous daily document", date_id)
+            print("Removed non-current daily document", date_id)
     # Iterate if more than 100 documents exist; no silent incomplete cleanup.
     if listing.json().get("nextPageToken"):
         raise RuntimeError("Unexpected >100 documents: pagination must be implemented before cleanup")
