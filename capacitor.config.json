@@ -1,0 +1,11 @@
+{
+  "appId": "com.varga.calendariocattolico",
+  "appName": "Calendario Cattolico",
+  "webDir": "android-web",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": false
+  }
+}
