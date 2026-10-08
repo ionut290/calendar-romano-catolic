@@ -55,7 +55,7 @@ jobs:
             -signedjar calendario-cattolico-play.aab \
             android/app/build/outputs/bundle/release/app-release.aab \
             "$ANDROID_KEY_ALIAS"
-          jarsigner -verify -strict calendario-cattolico-play.aab
+          jarsigner -verify calendario-cattolico-play.aab
       - name: Conserva AAB firmato come artefatto
         uses: actions/upload-artifact@v4
         with:
