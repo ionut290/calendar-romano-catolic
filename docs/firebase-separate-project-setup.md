@@ -1,17 +1,17 @@
 # Firebase separato per Calendario Romano-Cattolico
 
 ## Stato attuale
-Questo branch contiene soltanto configurazione e regole pronte per la revisione. **Non è stato creato un progetto Firebase, né è stata modificata l'app pubblicata.**
+Questo branch contiene soltanto configurazione e regole pronte per la revisione. **È stato scelto dall'utente il progetto Firebase esistente `ore-l-766fb` e configurato il suo alias in `.firebaserc`. Non abbiamo verificato se Firestore o Storage siano attivi, né modificato l'app pubblicata.**
 
-## Crea il progetto autonomo
-1. Apri https://console.firebase.google.com/ e scegli **Aggiungi progetto**.
-2. Nome suggerito: **Calendario Romano Cattolico**. L'ID progetto deve essere unico: scegli quello disponibile.
-3. Registra una **Web App** e copia la configurazione pubblica (apiKey, authDomain, projectId, storageBucket, appId).
-4. Crea il database **Cloud Firestore** in modalità bloccata inizialmente, scegliendo una regione adatta ai tuoi utenti.
-5. Valuta il piano di fatturazione prima di abilitare **Cloud Storage**, **Cloud Functions** o **Cloud Run**: alcuni servizi richiedono un piano a consumo anche a traffico basso.
-6. Installa Firebase CLI e accedi al nuovo progetto; configura l'alias del progetto localmente, senza committare credenziali.
-7. Dopo revisione di queste regole, distribuiscile nel **solo nuovo progetto** con `firebase deploy --only firestore:rules,storage`.
-8. Non distribuire le regole nel Firebase di Varga Gestionale.
+## Progetto Firebase selezionato
+- Console: https://console.firebase.google.com/u/0/project/ore-l-766fb/overview
+- ID progetto Firebase: `ore-l-766fb`
+- L'alias `default` in `.firebaserc` punta a questo progetto.
+- Prima di distribuire **qualsiasi regola** controllare se il progetto contiene già dati o altre applicazioni: le regole proposte contengono una negazione generale di accesso alle altre collezioni e NON devono sovrascrivere regole esistenti senza revisione.
+- Nella Console Firebase: controllare prima **Firestore Database**, **Storage**, **Impostazioni progetto > Le tue app** e piano di fatturazione.
+- Registrare la Web App (se non esiste), ottenere la configurazione pubblica (apiKey, authDomain, projectId, storageBucket, appId). Non pubblicare service account e chiavi private.
+- Integrare il client Firebase, i job backend e i test in un secondo passo: l'alias da solo non abilita un collegamento operativo.
+- Solo dopo la revisione delle regole e l'autorizzazione alla distribuzione, fare deploy esplicitamente verso il progetto corretto.
 
 ## Schema dati
 `dailyLiturgies/YYYY-MM-DD`:
