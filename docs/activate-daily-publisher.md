@@ -1,21 +1,24 @@
-# Attivazione pubblicazione giornaliera Firestore (progetto ore-l-766fb)
+# Attivazione pubblicazione quotidiana su Firestore — ORE L
 
-Il codice è su `feature/firebase-daily-cache`; l'app pubblicata non è stata cambiata.
-Gli audio rimangono sul sistema attuale **finché non verrà configurata una nuova distribuzione statica**. Questa migrazione iniziale riguarda solo i documenti di liturgia.
+## Stato
+Il branch `feature/firebase-daily-cache` contiene il lettore Firestore e il workflow con **Workload Identity Federation** (GitHub OIDC, senza chiavi JSON). Il pull request resta in bozza e **non è ancora attivo su main**.
 
-## Prima di attivare
-1. In **Google Cloud Console**, selezionare soltanto il progetto `ore-l-766fb` e abilitare la Firestore API se necessario. Firestore deve già esistere.
-2. Creare un account di servizio dedicato alla pubblicazione liturgia, concedendo solo i privilegi Firestore strettamente necessari; in produzione preferire Workload Identity Federation per evitare chiavi JSON permanenti.
-3. Se si usa temporaneamente un JSON service-account, creare una chiave soltanto tramite Google Cloud IAM e conservarla **solo** nel repository GitHub: Settings → Secrets and variables → Actions → New repository secret. Nome esatto: `FIREBASE_SERVICE_ACCOUNT`; valore: contenuto JSON completo. Mai incollarla in chat, in un file pubblico o in issue.
-4. Verificare che la chiave JSON contenga `project_id: ore-l-766fb`. Lo script rifiuta un altro progetto.
-5. Verificare limiti e quote di GitHub Actions / Firestore. GitHub Actions schedulate eseguono soltanto sul **branch predefinito**; pubblicare il workflow in main solo dopo la revisione.
-6. Dopo la pubblicazione in main, eseguire una volta manualmente da Actions → Pubblica liturgia quotidiana su Firestore → Run workflow. Controllare che appaia `dailyLiturgies/YYYY-MM-DD`, senza dati personali.
-7. Il job è schedulato alle 22:15 e 23:15 UTC, ma pubblica solo nell'ora 00 in `Europe/Rome` (ora legale/solare). GitHub Actions può avere ritardi o saltare una schedulazione; usare Run workflow in caso di assenza di contenuti. Se resta senza dati, l'app continua temporaneamente con la vecchia origine Netlify.
-8. **Non** attivare Cloud Storage e **non** disattivare Netlify prima che i test confermino la copertura delle letture.
-9. Se la liturgia CEI cambia struttura HTML, il parser potrebbe fallire in modo sicuro: non eliminerà la liturgia precedente. Controllare i log dell'Action.
+## Configurazione Google Cloud
+- Progetto: `ore-l-766fb` (numero `952052945501`).
+- Pool: `calendario-github`, provider: `github-actions`.
+- Provider resource: `projects/952052945501/locations/global/workloadIdentityPools/calendario-github/providers/github-actions`.
+- Account: `calendario-firestore@ore-l-766fb.iam.gserviceaccount.com`.
+- Controllare che provider OIDC abbia `google.subject = assertion.sub`, `attribute.repository = assertion.repository` e condizione `assertion.repository == 'ionut290/calendar-romano-catolic' && assertion.ref == 'refs/heads/main'`.
+- Verificare che sull'account di servizio sia assegnato `roles/datastore.user` e che il principalSet `attribute.repository/ionut290/calendar-romano-catolic` abbia il ruolo **Workload Identity User** (`roles/iam.workloadIdentityUser`) **sull'account di servizio**. Non ampliare a tutto il pool.
+- Nessuna chiave JSON e nessun secret Firebase permanente richiesto.
 
-## Costi e prestazioni
-- Firestore conserva solo la liturgia del giorno corrente, ma GitHub Actions e Firestore hanno quote e condizioni d'uso. Le letture pubbliche e le chiamate di lista hanno un costo/limite anche per cache miss.
-- Il client usa la cache locale quotidiana e, in mancanza di documento, limita le riprove a una ogni 10 minuti per sessione.
-- L'audio MP3 **non è su Firestore né Firebase Storage**: i file statici richiedono ancora pianificazione/test prima della migrazione.
-- Evitare di assegnare segreti del repository a workflow di pull request non fidati.
+## Attivazione e test
+1. Revisionare la PR e il parsing della pagina CEI: cambiamenti HTML potrebbero impedire la generazione.
+2. Pubblicare su main solo dopo verifica dei permessi. I workflow schedulati di GitHub Actions si eseguono dal branch predefinito; la condizione OIDC intenzionalmente rifiuta le esecuzioni su branch di prova.
+3. Avviare il workflow manualmente da GitHub Actions e verificare la riuscita dell'autenticazione federata e la presenza del documento `dailyLiturgies/YYYY-MM-DD` in Firestore.
+4. Testare l'app su più dispositivi, compreso il fallback Netlify e l'uso offline, prima di disattivare le funzioni correnti.
+5. Il job conserva solo il giorno italiano corrente nella collezione `dailyLiturgies`; le altre collezioni non vengono toccate. La pulizia è soggetta alla riuscita delle esecuzioni schedulate.
+6. Gli MP3 **non sono ancora migrati**: restano sulla distribuzione corrente, senza Firebase Storage e senza Blaze.
+
+## Limiti
+GitHub Actions schedulate possono subire ritardi o esecuzioni saltate. Firestore richiede controlli sulle quote di lettura e operazioni; non garantiamo costi zero. La chiusura della migrazione Netlify sarà una fase successiva.
