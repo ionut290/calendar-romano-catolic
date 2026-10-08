@@ -2,6 +2,11 @@ name: Pubblica liturgia quotidiana su Firestore
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/publish-daily-firestore.yml'
+      - 'scripts/publish_daily_firestore.py'
   schedule:
     # Midnight in Italy is 22 UTC in summer and 23 UTC in winter.
     # The Python script verifies Europe/Rome before publishing.
