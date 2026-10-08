@@ -16,6 +16,6 @@ export default async(req:Request)=>{
  const seconda=section(html,"Seconda Lettura",["Acclamazione al Vangelo","Vangelo"]);
  const vangelo=section(html,"Vangelo",["Sulle offerte","Antifona alla comunione","Dopo la comunione"]);
  const out={source:"CEI",sourceUrl:src,celebrazione:textOnly(title),colore:textOnly(color),letture:{prima:prima?reading(prima):null,salmo:salmo?reading(salmo):null,seconda:seconda?reading(seconda):null,vangelo:vangelo?reading(vangelo):null}};
- return Response.json(out,{headers:{"Cache-Control":"public, max-age=21600, stale-while-revalidate=86400"}});
+ return Response.json(out,{headers:{"Cache-Control":"public, max-age=21600, stale-while-revalidate=86400","Netlify-CDN-Cache-Control":"public, durable, max-age=86400","Netlify-Vary":"query=date"}});
 };
 export const config:Config={path:"/cei-liturgia"};
