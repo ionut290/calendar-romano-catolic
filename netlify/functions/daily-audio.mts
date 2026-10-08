@@ -2,6 +2,9 @@ import { getStore } from "@netlify/blobs";
 import type { Config } from "@netlify/functions";
 
 const headers={
+  "Access-Control-Allow-Origin":"*",
+  "Access-Control-Allow-Methods":"GET, HEAD, OPTIONS",
+  "Access-Control-Allow-Headers":"Content-Type",
   "Content-Type":"audio/mpeg",
   "Cache-Control":"public, max-age=86400",
   // GET responses can be served by the CDN without invoking the function again.
@@ -9,6 +12,7 @@ const headers={
   "Netlify-Vary":"query=date|key"
 };
 export default async(req:Request)=>{
+  if(req.method==="OPTIONS")return new Response(null,{status:204,headers});
   if(req.method!=="GET"&&req.method!=="HEAD")return new Response("Method not allowed",{status:405});
   const u=new URL(req.url),date=u.searchParams.get("date"),key=u.searchParams.get("key");
   if(!date||!key||!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(date)||!/^[A-Za-z0-9_-]+$/.test(key))
