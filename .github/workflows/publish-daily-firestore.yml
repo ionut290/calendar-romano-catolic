@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write
 
 concurrency:
   group: firebase-daily-liturgy
@@ -20,9 +21,14 @@ jobs:
     timeout-minutes: 8
     env:
       FIREBASE_PROJECT_ID: ore-l-766fb
-      FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
     steps:
       - uses: actions/checkout@v4
+      - name: Autentica tramite Workload Identity Federation
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/952052945501/locations/global/workloadIdentityPools/calendario-github/providers/github-actions
+          service_account: calendario-firestore@ore-l-766fb.iam.gserviceaccount.com
+          create_credentials_file: true
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
