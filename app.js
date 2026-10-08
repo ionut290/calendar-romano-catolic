@@ -94,6 +94,8 @@ async function canonicalLiturgy(d){
  }
  const key="liturgia-cei-v2:"+iso(d);let saved=null;
  try{saved=JSON.parse(localStorage.getItem(key)||"null")}catch(e){}
+ // CEI readings for a fixed calendar date are stable; reuse verified cache to save server calls.
+ if(saved?.source==="CEI"&&saved.letture?.vangelo?.testo)return saved;
  try{
   const response=await fetch("/cei-liturgia?date="+encodeURIComponent(iso(d)),{cache:"no-store"});
   if(!response.ok)throw Error("CEI unavailable");
@@ -335,12 +337,21 @@ function clean(el){
 }
 function audioDay(){const d=selected||new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-")}
 function safeKey(btn){return audioDay()+"-"+btn.dataset.read+".mp3"}
+const preRecordedChecks=new Map();
 async function prerecorded(btn){
- const day=audioDay(),key=btn.dataset.read;
+ const day=audioDay(),key=btn.dataset.read,cacheKey=day+"/"+key;
+ const previous=preRecordedChecks.get(cacheKey);
+ if(previous&&Date.now()-previous.at<(previous.url?86400000:1800000))return previous.url;
  const daily="/daily-audio?date="+encodeURIComponent(day)+"&key="+encodeURIComponent(key);
- try{const r=await fetch(daily,{method:"HEAD",cache:"force-cache"});if(r.ok)return daily}catch(e){}
- const url=PREGENERATED_BASE+safeKey(btn);
- try{const r=await fetch(url,{method:"HEAD",cache:"force-cache"});return r.ok?url:null}catch(e){return null}
+ let found=null;
+ try{const r=await fetch(daily,{method:"HEAD",cache:"force-cache"});if(r.ok)found=daily}catch(e){}
+ if(!found){
+  const url=PREGENERATED_BASE+safeKey(btn);
+  try{const r=await fetch(url,{method:"HEAD",cache:"force-cache"});if(r.ok)found=url}catch(e){}
+ }
+ preRecordedChecks.set(cacheKey,{url:found,at:Date.now()});
+ for(const oldKey of preRecordedChecks.keys())if(!oldKey.startsWith(day+"/"))preRecordedChecks.delete(oldKey);
+ return found;
 }
 async function generate(text){const endpoint="https://leonelhs-kokoro-tts-italian.hf.space/gradio_api/call/predict";const first=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({data:[text,"im_nicola",0.92]})});if(!first.ok)throw Error("Servizio narratore non disponibile");const j=await first.json();if(!j.event_id)throw Error("Risposta narratore non valida");const r=await fetch(endpoint+"/"+j.event_id);if(!r.ok)throw Error("Audio non disponibile");const raw=await r.text();for(const line of raw.split("\n").filter(x=>x.startsWith("data: "))){try{const data=JSON.parse(line.slice(6)),v=Array.isArray(data)?data[0]:data;if(v?.url)return v.url;if(v?.path&&/^https?:/.test(v.path))return v.path}catch(e){}}throw Error("Audio non ricevuto")}
 function reset(){document.querySelectorAll(".narrate-btn").forEach(b=>{b.innerHTML='<span class="play-icon">▶</span><span class="play-label">Ascolta</span>';b.classList.remove("playing")});active=null}
