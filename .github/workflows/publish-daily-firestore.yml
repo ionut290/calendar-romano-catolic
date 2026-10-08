@@ -1,0 +1,32 @@
+name: Pubblica liturgia quotidiana su Firestore
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Midnight in Italy is 22 UTC in summer and 23 UTC in winter.
+    # The Python script verifies Europe/Rome before publishing.
+    - cron: "15 22,23 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: firebase-daily-liturgy
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      FIREBASE_PROJECT_ID: ore-l-766fb
+      FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Installa dipendenze minimali
+        run: python -m pip install --disable-pip-version-check "google-auth>=2.30,<3" "requests>=2.32,<3" "beautifulsoup4>=4.12,<5"
+      - name: Pubblica oggi e rimuovi date passate
+        run: python scripts/publish_daily_firestore.py
